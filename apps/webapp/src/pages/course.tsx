@@ -12,6 +12,7 @@ import {
   PlayCircle,
   User,
 } from "lucide-react";
+import { CourseArt } from "@/components/course-art";
 import { CourseMasteryBar, LessonStateIcon, MasteryBadge, UnitLadder } from "@/components/mastery";
 import { PackBrowser } from "@/components/pack-browser";
 import { Badge } from "@/components/ui/badge";
@@ -133,22 +134,15 @@ function CourseInner({ slug }: { slug: string }) {
               )}
             </div>
           </div>
-          <aside
-            className="space-y-3 self-start rounded-xl border bg-background p-5"
-            aria-label="Your course mastery"
-          >
-            <h2 className="text-lg font-semibold">Course mastery</h2>
-            <CourseMasteryBar course={course} />
-            <p className="text-sm text-muted-foreground">
-              {p.done} of {p.lessonsTotal} lessons finished, {p.quizzesPassed} of {p.quizzesTotal}{" "}
-              quizzes passed.
-            </p>
-          </aside>
+          <div className="hidden self-center overflow-hidden rounded-xl border lg:block">
+            <CourseArt course={course} className="aspect-[2/1]" />
+          </div>
         </div>
       </section>
 
-      <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 lg:grid-cols-[1fr_24rem]">
         <Tabs
+          className="min-w-0"
           value={tab}
           onValueChange={(v) => {
             const n = new URLSearchParams(params);
@@ -411,6 +405,17 @@ function CourseInner({ slug }: { slug: string }) {
             </p>
           </TabsContent>
         </Tabs>
+        <aside
+          className="space-y-3 self-start rounded-xl border bg-card p-5 max-lg:order-first lg:sticky lg:top-24"
+          aria-label="Your course mastery"
+        >
+          <h2 className="text-lg font-semibold">Course mastery</h2>
+          <CourseMasteryBar course={course} />
+          <p className="text-sm text-muted-foreground">
+            {p.done} of {p.lessonsTotal} lessons finished, {p.quizzesPassed} of {p.quizzesTotal}{" "}
+            quizzes passed.
+          </p>
+        </aside>
       </div>
     </>
   );

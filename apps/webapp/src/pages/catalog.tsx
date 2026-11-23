@@ -222,9 +222,17 @@ function Tags({ e }: { e: Entry }) {
   const { field, discipline } = primary(e);
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {field && <Badge variant="secondary">{field.name}</Badge>}
+      {field && (
+        <Badge variant="secondary" className="max-w-full min-w-0 shrink" title={field.name}>
+          <span className="truncate">{field.name}</span>
+        </Badge>
+      )}
       <Badge variant="outline">{e.course.level}</Badge>
-      {e.kind === "upcoming" && <Badge>Coming soon</Badge>}
+      {e.kind === "upcoming" && (
+        <Badge variant="outline" className="border-dashed text-muted-foreground">
+          Coming soon
+        </Badge>
+      )}
       <span className="sr-only">{discipline?.name}</span>
     </div>
   );
@@ -237,18 +245,16 @@ function UpcomingCard({ e, list }: { e: Extract<Entry, { kind: "upcoming" }>; li
     <div
       className={cn(
         "flex overflow-hidden rounded-xl border border-dashed bg-card/60",
-        list ? "flex-row" : "flex-col",
+        list ? "flex-col sm:flex-row" : "flex-col",
       )}
       aria-label={`${c.title}, coming soon`}
     >
       <CourseArt
         course={c}
-        className={cn(
-          "object-cover opacity-60 grayscale-[40%]",
-          list ? "h-auto w-52 shrink-0" : "h-36",
-        )}
+        muted
+        className={list ? "hidden h-auto w-52 shrink-0 sm:block" : "aspect-[2/1]"}
       />
-      <div className="flex flex-1 flex-col gap-2 p-5">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 p-5">
         <Tags e={e} />
         <h3 className="text-xl leading-snug font-semibold">{c.title}</h3>
         <p className="text-muted-foreground">{c.subtitle}</p>
@@ -267,7 +273,7 @@ function CourseRow({ e }: { e: Extract<Entry, { kind: "course" }> }) {
       className="group flex overflow-hidden rounded-xl border bg-card transition-colors hover:border-primary/50"
     >
       <CourseArt course={c} className="hidden h-auto w-52 shrink-0 object-cover sm:block" />
-      <div className="flex flex-1 flex-col gap-2 p-5">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 p-5">
         <Tags e={e} />
         <h3 className="text-xl leading-snug font-semibold group-hover:text-primary">{c.title}</h3>
         <p className="text-muted-foreground">{c.subtitle}</p>
@@ -414,13 +420,13 @@ export function Catalog() {
         </div>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-[17rem_1fr]">
+      <div className="grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
         <aside className="hidden lg:block" aria-label="Filters">
           <div className="sticky top-24 max-h-[calc(100svh-7rem)] overflow-y-auto pr-2">
             <FilterPanel filters={filters} toggle={toggle} state={state} />
           </div>
         </aside>
-        <section aria-live="polite">
+        <section aria-live="polite" className="min-w-0">
           <p className="mb-3 text-sm text-muted-foreground" role="status">
             {results.length} {results.length === 1 ? "course" : "courses"}
           </p>

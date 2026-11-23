@@ -29,7 +29,13 @@ export function App() {
   if (courses.length === 0) return <Onboarding />;
   return (
     <Suspense
-      fallback={<div className="p-10 text-center text-sm text-muted-foreground">Loading…</div>}
+      fallback={
+        <div
+          className="fixed inset-x-0 top-0 z-50 h-0.5 animate-pulse bg-primary"
+          role="progressbar"
+          aria-label="Loading"
+        />
+      }
     >
       <Routes>
         <Route element={<Layout />}>

@@ -131,9 +131,11 @@ export function CourseMasteryBar({ course }: { course: Course }) {
           </li>
         ))}
       </ul>
-      <p className="min-h-5 text-sm text-muted-foreground">
-        {tip ? `${counts[tip]} of ${total} units: ${levelInfo(tip).hint.toLowerCase()}` : ""}
-      </p>
+      {tip && (
+        <p className="text-sm text-muted-foreground" role="status">
+          {counts[tip]} of {total} units: {levelInfo(tip).hint.toLowerCase()}
+        </p>
+      )}
     </div>
   );
 }

@@ -76,12 +76,12 @@ export function Blocks({ blocks, labHref }: { blocks: Block[]; labHref?: (id: st
         );
       case "eq":
         return (
-          <figure key={i} className="my-5 rounded-lg border bg-muted/50 px-4 py-3">
+          <figure key={i} className="plate-paper my-6 rounded-lg border px-4 py-4">
             <div className="overflow-x-auto py-1 text-center text-[1.05rem]" role="math">
               <Tex tex={b.text} display />
             </div>
             {b.caption && (
-              <figcaption className="mt-1 text-center text-sm text-muted-foreground">
+              <figcaption className="mt-2 text-center text-sm text-muted-foreground">
                 {b.caption}
               </figcaption>
             )}
@@ -91,11 +91,8 @@ export function Blocks({ blocks, labHref }: { blocks: Block[]; labHref?: (id: st
         const c = CALLOUT[b.kind];
         const Icon = c.icon;
         return (
-          <aside
-            key={i}
-            className={cn("my-5 flex gap-3 rounded-lg border p-4 text-sm leading-6", c.cls)}
-          >
-            <Icon className="mt-0.5 size-4 shrink-0" />
+          <aside key={i} className={cn("my-6 flex gap-3 rounded-lg border p-4 leading-7", c.cls)}>
+            <Icon className="mt-1.5 size-4 shrink-0" />
             <div>
               <div className="mb-0.5 font-semibold">{b.title ?? c.label}</div>
               <Inline text={b.text} />

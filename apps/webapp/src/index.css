@@ -42,6 +42,10 @@
   --chart-3: #eb6834;
   --chart-4: #6250d6;
   --chart-5: #e87ba4;
+  --plate-bg: #eef5ef;
+  --plate-grid: rgba(11, 70, 38, 0.07);
+  --plate-ink: #0b4626;
+  --plate-accent: #1e8443;
   --sidebar: #fbfcfb;
   --sidebar-foreground: #0f2318;
   --sidebar-primary: #1e8443;
@@ -85,6 +89,10 @@
   --chart-3: #d95926;
   --chart-4: #9085e9;
   --chart-5: #d55181;
+  --plate-bg: #111c16;
+  --plate-grid: rgba(165, 219, 187, 0.06);
+  --plate-ink: #a5dbbb;
+  --plate-accent: #3fb06a;
   --sidebar: #151c18;
   --sidebar-foreground: #eef3ec;
   --sidebar-primary: #3fb06a;
@@ -205,6 +213,30 @@
 }
 :is(.prose-lesson, .prose-md) a {
   @apply font-medium text-primary hover:text-primary/80;
+}
+
+/* Graph paper behind equations: the same drafting sheet as the course plates. */
+.plate-paper {
+  background-color: color-mix(in srgb, var(--plate-bg) 55%, var(--card));
+  background-image:
+    linear-gradient(var(--plate-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--plate-grid) 1px, transparent 1px);
+  background-size: 12px 12px;
+  background-position: -1px -1px;
+}
+
+/* Standing waves on the setup plate: each mode swings through its nodes, higher modes faster. */
+.plate-animate .mode-wave {
+  transform-box: view-box;
+  animation: mode-swing 3s ease-in-out infinite alternate;
+}
+@keyframes mode-swing {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(-1);
+  }
 }
 
 /* Rendered Markdown notes: same typography as lessons, full column width, flows in the page scroll. */

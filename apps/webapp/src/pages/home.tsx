@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, FileText, PlayCircle, Rocket } from "lucide-react";
 import { CourseCard } from "@/components/course-card";
+import { CourseArt } from "@/components/course-art";
+import { allDisciplines, fields } from "@/data/taxonomy";
 import { MasteryBadge, UnitLadder } from "@/components/mastery";
 import { buttonVariants } from "@/components/ui/button";
 import { courses, findLesson, getCourse, lessonsOf } from "@/data/courses";
@@ -13,46 +15,44 @@ const HERO_BTN = "h-11 bg-[#3fb06a] px-5 text-base text-[#07170d] hover:bg-[#4bc
 const HERO_BTN_OUTLINE =
   "h-11 border-white/30 bg-transparent px-5 text-base text-white hover:bg-white/10 hover:text-white";
 
-/** Decorative orbits in brand greens. Pure SVG, no assets. */
-function OrbitArt() {
+/** The knowledge tree as a wall of figure plates: one row per field, lit where a course is open. */
+function KnowledgeMap() {
   return (
-    <svg viewBox="0 0 520 360" className="hidden h-auto w-full max-w-xl lg:block" aria-hidden>
-      {[55, 95, 140, 185].map((r, i) => (
-        <ellipse
-          key={r}
-          cx="270"
-          cy="190"
-          rx={r * 1.45}
-          ry={r * 0.52}
-          transform="rotate(-20 270 190)"
-          fill="none"
-          stroke="#6fcf97"
-          strokeOpacity={0.22 + i * 0.12}
-          strokeWidth="1.5"
-        />
+    <div className="space-y-2.5" aria-label="Knowledge tree">
+      {fields.map((fl) => (
+        <div key={fl.id} className="grid grid-cols-[9rem_1fr] items-center gap-4">
+          <Link
+            to={`/courses?field=${fl.id}`}
+            className="text-sm leading-tight text-white/70 hover:text-white"
+          >
+            {fl.name}
+          </Link>
+          <div className="grid grid-cols-5 gap-2.5">
+            {fl.disciplines.map((d) => {
+              const live = courses.find((c) => c.discipline === d.id);
+              return (
+                <Link
+                  key={d.id}
+                  to={live ? `/courses/${live.slug}` : `/courses?disc=${d.id}`}
+                  title={live ? live.title : `${d.name} (coming soon)`}
+                  className={cn(
+                    "overflow-hidden rounded-md ring-1 transition [--plate-bg:#0d2a1a] [--plate-grid:rgba(165,219,187,0.07)] [--plate-ink:#a5dbbb] [--plate-accent:#4cc37b]",
+                    live
+                      ? "ring-[#4cc37b] hover:ring-2"
+                      : "opacity-60 ring-white/10 hover:opacity-100 hover:ring-white/30",
+                  )}
+                >
+                  <CourseArt course={{ title: d.name, discipline: d.id }} muted={!live} />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       ))}
-      <circle cx="270" cy="190" r="34" fill="#1e8443" />
-      <circle
-        cx="270"
-        cy="190"
-        r="34"
-        fill="none"
-        stroke="#fff"
-        strokeOpacity="0.25"
-        strokeWidth="2"
-      />
-      <path
-        d="M252 196c10-18 26-24 36-20"
-        fill="none"
-        stroke="#fff"
-        strokeOpacity="0.5"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <circle cx="402" cy="112" r="8" fill="#a5dbbb" />
-      <circle cx="132" cy="236" r="5" fill="#fff" fillOpacity="0.85" />
-      <circle cx="338" cy="296" r="6" fill="#3fb06a" />
-    </svg>
+      <p className="pt-1 pl-[10rem] text-sm text-white/60">
+        {courses.length} of {allDisciplines.length} disciplines open. More are on the way.
+      </p>
+    </div>
   );
 }
 
@@ -159,7 +159,7 @@ function ResumeHero({ courseSlug, lessonId }: { courseSlug: string; lessonId: st
 function GenericHero() {
   return (
     <section className="bg-forest text-white">
-      <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-14 md:py-20 lg:grid-cols-[1.1fr_1fr]">
+      <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-14 md:py-20 lg:grid-cols-[1fr_1.25fr]">
         <div className="space-y-6">
           <h1 className="max-w-xl text-4xl leading-[1.12] font-semibold text-balance md:text-5xl">
             Learn space science and engineering
@@ -172,7 +172,9 @@ function GenericHero() {
             Explore courses <ArrowRight />
           </Link>
         </div>
-        <OrbitArt />
+        <div className="hidden lg:block">
+          <KnowledgeMap />
+        </div>
       </div>
     </section>
   );

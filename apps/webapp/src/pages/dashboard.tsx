@@ -1,137 +1,36 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Award, Bookmark, GraduationCap, Layers, NotebookPen, PlayCircle } from "lucide-react";
 import { CourseMasteryBar, UnitLadder, MasteryBadge } from "@/components/mastery";
 import { buttonVariants } from "@/components/ui/button";
-import { QUIZ_PASS, courses, findLesson, getCourse } from "@/data/courses";
+import { courses, findLesson, getCourse } from "@/data/courses";
+import { ActivityHeatmap, ActivitySpark, QuizScores } from "@/components/progress-charts";
 import { unitStatus } from "@/lib/mastery";
 import { courseProgress } from "@/lib/progress";
-import { dayKey, minutes } from "@/lib/format";
+import { minutes } from "@/lib/format";
 import { streak, useStore } from "@/store/store";
 import { cn } from "@/lib/utils";
 
-function Tile({ label, value, note }: { label: string; value: string | number; note?: string }) {
+function Figure({
+  label,
+  value,
+  note,
+  trend,
+}: {
+  label: string;
+  value: string | number;
+  note?: string;
+  trend?: React.ReactNode;
+}) {
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="min-w-0 space-y-1 px-4 py-4 first:pl-0 sm:px-5 max-lg:odd:pl-0">
       <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="font-heading text-3xl font-semibold">{value}</div>
+      <div className="flex items-end gap-3">
+        <span className="font-heading text-3xl leading-none font-semibold tracking-tight sm:text-4xl">
+          {value}
+        </span>
+        {trend}
+      </div>
       {note && <div className="text-sm text-muted-foreground">{note}</div>}
-    </div>
-  );
-}
-
-/** Study activity: one-hue (gold) sequential ramp, 26 weeks, with weekday labels, legend and a hover/focus read-out. */
-function Heatmap({ activity }: { activity: Record<string, number> }) {
-  const weeks = 26;
-  const today = new Date();
-  const start = new Date(today);
-  // Columns are weeks starting on Sunday, so row 1 is Sunday and the labels below line up.
-  start.setDate(today.getDate() - today.getDay() - (weeks - 1) * 7);
-  const cells = Array.from({ length: (weeks - 1) * 7 + today.getDay() + 1 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    return { d, n: activity[dayKey(d)] ?? 0 };
-  });
-  const max = Math.max(4, ...cells.map((c) => c.n));
-  const shade = (n: number) =>
-    n === 0
-      ? "var(--m-none)"
-      : `color-mix(in oklch, var(--gold) ${Math.round(30 + (n / max) * 70)}%, var(--card))`;
-  const [tip, setTip] = useState<string>("");
-  const label = (c: (typeof cells)[number]) =>
-    `${c.d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}: ${c.n === 0 ? "no activity" : `${c.n} action${c.n === 1 ? "" : "s"}`}`;
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <div className="grid grid-rows-7 gap-[3px] text-xs text-muted-foreground" aria-hidden>
-          {["", "Mon", "", "Wed", "", "Fri", ""].map((d, i) => (
-            <span key={i} className="flex items-center">
-              {d}
-            </span>
-          ))}
-        </div>
-        <div
-          className="grid min-w-0 flex-1 auto-cols-fr grid-flow-col grid-rows-7 gap-[3px]"
-          role="group"
-          aria-label="Study activity over the last 26 weeks"
-        >
-          {cells.map((c) => (
-            <button
-              type="button"
-              key={c.d.toISOString()}
-              aria-label={label(c)}
-              onPointerEnter={() => setTip(label(c))}
-              onFocus={() => setTip(label(c))}
-              onPointerLeave={() => setTip("")}
-              onBlur={() => setTip("")}
-              className="aspect-square w-full cursor-default rounded-[3px] outline-offset-2 transition-transform hover:scale-125"
-              style={{ background: shade(c.n) }}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-        <span className="min-h-5" role="status">
-          {tip || "Hover or focus a day to see what you did."}
-        </span>
-        <span className="flex items-center gap-1.5">
-          Less{" "}
-          {[0, 1, 2, 4].map((n) => (
-            <span
-              key={n}
-              className="size-3.5 rounded-[3px]"
-              style={{ background: shade(n === 0 ? 0 : (n / 4) * max) }}
-            />
-          ))}{" "}
-          More
-        </span>
-      </div>
-    </div>
-  );
-}
-
-/** Best quiz score per unit as horizontal bars on one baseline, one hue, with the pass mark drawn as a reference line. */
-function QuizBars({ courseSlug }: { courseSlug: string }) {
-  const course = getCourse(courseSlug)!;
-  const completed = useStore((s) => s.completed);
-  const quizzes = useStore((s) => s.quizzes);
-  return (
-    <div className="space-y-2.5">
-      {course.modules.map((m, i) => {
-        const q = quizzes[`${course.slug}/${m.id}`];
-        const pct = q ? Math.round(q.best * 100) : 0;
-        void completed;
-        return (
-          <div
-            key={m.id}
-            className="grid grid-cols-[minmax(0,9rem)_1fr_3rem] items-center gap-3 text-sm"
-          >
-            <span className="truncate" title={m.title}>
-              Unit {i + 1}
-            </span>
-            <div
-              className="relative h-4 rounded-r-[4px] bg-m-none/70"
-              role="img"
-              aria-label={`Unit ${i + 1} best score ${q ? pct + "%" : "not taken"}`}
-            >
-              {q && (
-                <div
-                  className="absolute inset-y-0 left-0 rounded-r-[4px] bg-chart-1"
-                  style={{ width: `${pct}%` }}
-                />
-              )}
-              <div
-                className="absolute -inset-y-1 w-px bg-foreground/60"
-                style={{ left: `${QUIZ_PASS * 100}%` }}
-              />
-            </div>
-            <span className="text-right font-semibold tabular-nums">{q ? `${pct}%` : "—"}</span>
-          </div>
-        );
-      })}
-      <div className="flex items-center gap-2 pl-[calc(9rem+0.75rem)] text-xs text-muted-foreground">
-        <span className="inline-block h-3 w-px bg-foreground/60" /> Pass mark {QUIZ_PASS * 100}%
-      </div>
     </div>
   );
 }
@@ -186,15 +85,16 @@ export function Dashboard() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile
+      <div className="grid grid-cols-2 divide-x border-y lg:grid-cols-4 max-lg:[&>*:nth-child(2)]:border-r-0 max-lg:[&>*:nth-child(n+3)]:border-t">
+        <Figure
           label="Day streak"
           value={days}
-          note={days ? "days in a row" : "Study today to start one"}
+          note={days ? "Last 14 days shown" : "Study today to start one"}
+          trend={<ActivitySpark activity={s.activity} />}
         />
-        <Tile label="Study time" value={minutes(totalMin)} note="from finished lessons" />
-        <Tile label="Quizzes passed" value={quizzesPassed} />
-        <Tile label="Certificates" value={certs.length} />
+        <Figure label="Study time" value={minutes(totalMin)} note="From finished lessons" />
+        <Figure label="Quizzes passed" value={quizzesPassed} />
+        <Figure label="Certificates" value={certs.length} />
       </div>
 
       {enrolled.length === 0 && (
@@ -209,8 +109,8 @@ export function Dashboard() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0 space-y-6">
           {enrolled.map((c) => {
             const p = courseProgress(c, s);
             return (
@@ -277,14 +177,14 @@ export function Dashboard() {
                 </div>
                 <div>
                   <h3 className="mb-2 text-base font-semibold">Best quiz score by unit</h3>
-                  <QuizBars courseSlug={c.slug} />
+                  <QuizScores course={c} />
                 </div>
               </section>
             );
           })}
           <section className="space-y-3 rounded-xl border bg-card p-5">
             <h2 className="text-xl font-semibold">Study activity</h2>
-            <Heatmap activity={s.activity} />
+            <ActivityHeatmap activity={s.activity} />
           </section>
         </div>
 

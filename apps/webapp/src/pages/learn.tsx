@@ -514,11 +514,11 @@ function LessonView({
             blocks={lesson.blocks}
             labHref={(id) => `/learn/${course.slug}/labs/${moduleId}?lab=${id}`}
           />
-          <section className="mt-8 rounded-xl border border-primary/30 bg-accent p-5">
+          <section className="prose-lesson mt-10 rounded-xl border border-primary/30 bg-accent p-5">
             <h2 className="mb-2 flex items-center gap-2 font-semibold">
               <ListChecks className="size-4" /> Key takeaways
             </h2>
-            <ul className="list-disc space-y-1 pl-5 text-sm">
+            <ul className="list-disc space-y-1.5 pl-5">
               {lesson.takeaways.map((t) => (
                 <li key={t}>{t}</li>
               ))}
