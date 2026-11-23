@@ -1,0 +1,260 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/lexend";
+@import "@fontsource-variable/atkinson-hyperlegible-next";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* DUT Space Science Centre palette, from the centre's own posters: forest and bright green, cream, tan */
+  --radius: 0.625rem;
+  --background: #fbfcfb;
+  --foreground: #0f2318;
+  --card: #ffffff;
+  --card-foreground: #0f2318;
+  --popover: #ffffff;
+  --popover-foreground: #0f2318;
+  --primary: #1e8443;
+  --primary-foreground: #ffffff;
+  --secondary: #eef2ef;
+  --secondary-foreground: #12301f;
+  --muted: #f1f4f2;
+  --muted-foreground: #566359;
+  --accent: #e4f0e8;
+  --accent-foreground: #0b4626;
+  --destructive: oklch(0.577 0.245 27.325);
+  --success: oklch(0.62 0.15 150);
+  --border: #e2e7e3;
+  --input: #d7ddd9;
+  --ring: #1e8443;
+  --forest: #0b4626;
+  --gold: #1e8443;
+  --gold-foreground: #ffffff;
+  /* mastery levels: one blue ramp, light to dark (ordinal) */
+  --m-attempted: #7cc496;
+  --m-familiar: #34a05c;
+  --m-proficient: #1a7a3d;
+  --m-mastered: #0b4626;
+  --m-none: #e1e6e2;
+  --chart-1: #1e8443;
+  --chart-2: #2a78d6;
+  --chart-3: #eb6834;
+  --chart-4: #6250d6;
+  --chart-5: #e87ba4;
+  --sidebar: #fbfcfb;
+  --sidebar-foreground: #0f2318;
+  --sidebar-primary: #1e8443;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e4f0e8;
+  --sidebar-accent-foreground: #0b4626;
+  --sidebar-border: #e2e7e3;
+  --sidebar-ring: #1e8443;
+}
+
+.dark {
+  --background: #0e1511;
+  --foreground: #eef3ec;
+  --card: #151c18;
+  --card-foreground: #eef3ec;
+  --popover: #151c18;
+  --popover-foreground: #eef3ec;
+  --primary: #3fb06a;
+  --primary-foreground: #07170d;
+  --secondary: #1f2923;
+  --secondary-foreground: #eef3ec;
+  --muted: #19211c;
+  --muted-foreground: #98aa9f;
+  --accent: #212e26;
+  --accent-foreground: #eef3ec;
+  --destructive: oklch(0.704 0.191 22.216);
+  --success: oklch(0.72 0.15 150);
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.14);
+  --ring: #46b873;
+  --forest: #0f2217;
+  --gold: #3fb06a;
+  --gold-foreground: #07170d;
+  --m-attempted: #1f6f43;
+  --m-familiar: #2e9558;
+  --m-proficient: #5ab882;
+  --m-mastered: #a5dbbb;
+  --m-none: rgba(255, 255, 255, 0.12);
+  --chart-1: #2f9e5b;
+  --chart-2: #3987e5;
+  --chart-3: #d95926;
+  --chart-4: #9085e9;
+  --chart-5: #d55181;
+  --sidebar: #151c18;
+  --sidebar-foreground: #eef3ec;
+  --sidebar-primary: #3fb06a;
+  --sidebar-primary-foreground: #07170d;
+  --sidebar-accent: #212e26;
+  --sidebar-accent-foreground: #eef3ec;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #46b873;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-forest: var(--forest);
+  --color-gold: var(--gold);
+  --color-m-attempted: var(--m-attempted);
+  --color-m-familiar: var(--m-familiar);
+  --color-m-proficient: var(--m-proficient);
+  --color-m-mastered: var(--m-mastered);
+  --color-m-none: var(--m-none);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-heading: "Lexend Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+    @apply font-sans;
+  }
+  body {
+    @apply antialiased bg-background text-foreground;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.015em;
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+.prose-lesson {
+  max-width: 68ch;
+  font-size: 1.0625rem;
+}
+/* Focus mode: the column is already centred and capped by the page, so the text fills it. */
+[data-focus] .prose-lesson {
+  max-width: none;
+}
+:is(.prose-lesson, .prose-md) p {
+  @apply my-4 leading-[1.75];
+}
+:is(.prose-lesson, .prose-md) h3 {
+  @apply mt-10 mb-2 text-xl font-semibold;
+}
+:is(.prose-lesson, .prose-md) ul {
+  @apply my-3 list-disc space-y-1.5 pl-6;
+}
+:is(.prose-lesson, .prose-md) ol {
+  @apply my-3 list-decimal space-y-1.5 pl-6;
+}
+:is(.prose-lesson, .prose-md) code {
+  @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em];
+}
+:is(.prose-lesson, .prose-md) a {
+  @apply font-medium text-primary hover:text-primary/80;
+}
+
+/* Rendered Markdown notes: same typography as lessons, full column width, flows in the page scroll. */
+.prose-md {
+  font-size: 1.0625rem;
+}
+.prose-md > :first-child {
+  margin-top: 0;
+}
+.prose-md h1 {
+  @apply mt-8 mb-3 text-3xl font-semibold;
+}
+.prose-md h2 {
+  @apply mt-8 mb-2 text-2xl font-semibold;
+}
+.prose-md h4 {
+  @apply mt-6 mb-1 text-lg font-semibold;
+}
+.prose-md blockquote {
+  @apply my-4 border-l-4 border-primary/40 pl-4 text-muted-foreground;
+}
+.prose-md hr {
+  @apply my-8 border-border;
+}
+.prose-md img {
+  @apply my-4 h-auto max-w-full rounded-lg;
+}
+.prose-md li.task-list-item {
+  list-style: none;
+  margin-left: -1.5rem;
+}
+.prose-md li input[type="checkbox"] {
+  @apply mr-2 accent-primary;
+}
+.prose-md strong {
+  @apply font-semibold;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}
+
+/* Links are never underlined; colour and weight carry the affordance. */
+@layer base {
+  a {
+    text-decoration: none;
+  }
+}
