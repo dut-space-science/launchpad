@@ -10,11 +10,13 @@ import {
   FlaskConical,
   Layers,
   PlayCircle,
+  Landmark,
   User,
 } from "lucide-react";
 import { CourseArt } from "@/components/course-art";
 import { CourseMasteryBar, LessonStateIcon, MasteryBadge, UnitLadder } from "@/components/mastery";
 import { PackBrowser } from "@/components/pack-browser";
+import { courseInstitutions, institutionLabel } from "@/lib/catalog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -60,6 +62,7 @@ function CourseInner({ slug }: { slug: string }) {
         .flatMap((b) => (b.t === "lab" ? [b.id] : [])),
     ),
   ];
+  const institutions = courseInstitutions(course).map(institutionLabel);
   const start = p.next ?? lessonsOf(course)[0];
   const videoCount = lessonsOf(course).filter((l) => l.videos?.length).length;
 
@@ -105,6 +108,11 @@ function CourseInner({ slug }: { slug: string }) {
               <span className="flex items-center gap-1.5">
                 <FlaskConical className="size-4" /> {labIds.length} labs
               </span>
+              {institutions.length > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <Landmark className="size-4" /> Material from {institutions.join(", ")}
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap gap-3 pt-1">
               <Button

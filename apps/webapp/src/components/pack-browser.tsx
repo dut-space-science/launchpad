@@ -22,6 +22,7 @@ import {
 } from "@/lib/practice";
 import { useStore } from "@/store/store";
 import { cn } from "@/lib/utils";
+import { createSearch } from "@/lib/search";
 
 const TYPES = [
   { value: "all", label: "All types" },
@@ -74,16 +75,27 @@ export function PackBrowser({ course }: { course: Course }) {
     { value: "all", label: "All units" },
     ...course.modules.map((m, i) => ({ value: m.id, label: `Unit ${i + 1}: ${m.title}` })),
   ];
-  const shown = packs.filter((p) => {
+  const searcher = useMemo(
+    () =>
+      createSearch(packs, (p) => [
+        { text: p.title, weight: 6 },
+        { text: p.blurb, weight: 3 },
+        { text: KIND_LABEL[p.kind], weight: 1 },
+        {
+          text: p.problems.map((x) => `${x.prompt} ${x.options?.join(" ") ?? ""}`).join(" "),
+          weight: 1,
+        },
+      ]),
+    [packs],
+  );
+  const found = searcher.search(q);
+  const shown = (found.empty ? packs : found.results.map((r) => r.item)).filter((p) => {
     const r = results[`${course.slug}/${p.id}`];
     const st = !r ? "new" : r.best >= MASTERED ? "done" : "going";
-    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
-    const hay = `${p.title} ${p.blurb} ${KIND_LABEL[p.kind]}`.toLowerCase();
     return (
       (unit === "all" || p.unit === unit) &&
       (type === "all" || p.kind === type) &&
-      (status === "all" || st === status) &&
-      tokens.every((t) => hay.includes(t))
+      (status === "all" || st === status)
     );
   });
 

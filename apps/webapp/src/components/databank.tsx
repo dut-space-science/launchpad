@@ -51,6 +51,7 @@ import { buildItems, KINDS, toMarkdown, type Item, type Kind } from "@/lib/datab
 import { download } from "@/store/backup";
 import { actions, useStore } from "@/store/store";
 import { cn } from "@/lib/utils";
+import { createSearch } from "@/lib/search";
 
 type Tab = Kind | "pinned";
 
@@ -217,7 +218,11 @@ function ItemDetail({
                 <Inline text={item.text} />
               </p>
             )}
-            {item.kind === "term" && <p className="leading-relaxed">{item.def}</p>}
+            {item.kind === "term" && (
+              <p className="leading-relaxed">
+                <Inline text={item.def} />
+              </p>
+            )}
             {item.kind === "code" && (
               <div className="min-w-0 space-y-2">
                 {item.note && <p className="text-sm text-muted-foreground">{item.note}</p>}
@@ -287,14 +292,19 @@ export function Databank({
   );
   const isPinned = (i: Item) => !!pins[`${course.slug}/${i.id}`];
   // Items matching the search and unit filter, before the tab is applied (so tab counts stay honest).
+  const searcher = useMemo(
+    () =>
+      createSearch(base, (i) => [
+        { text: i.title, weight: 6 },
+        { text: i.search, weight: 2 },
+      ]),
+    [base],
+  );
   const matching = useMemo(() => {
-    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
-    return base.filter(
-      (i) =>
-        (unit === "all" || i.unit === unit) &&
-        tokens.every((t) => i.search.toLowerCase().includes(t)),
-    );
-  }, [base, q, unit]);
+    const found = searcher.search(q);
+    const list = found.empty ? base : found.results.map((r) => r.item);
+    return list.filter((i) => unit === "all" || i.unit === unit);
+  }, [base, searcher, q, unit]);
   const count = (t: Tab) =>
     t === "pinned" ? matching.filter(isPinned).length : matching.filter((i) => i.kind === t).length;
   const tabs: Tab[] = ["pinned", ...KINDS.map((k) => k.key)];

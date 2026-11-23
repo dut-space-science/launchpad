@@ -25,6 +25,7 @@ import { courses, findLesson, getCourse } from "@/data/courses";
 import { download } from "@/store/backup";
 import { actions, useStore } from "@/store/store";
 import { cn } from "@/lib/utils";
+import { createSearch } from "@/lib/search";
 
 const NotesEditor = lazy(() => import("@/components/notes-editor"));
 
@@ -71,12 +72,16 @@ export function Notebook() {
   }, [notes]);
 
   const shown = useMemo(() => {
-    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
-    return entries.filter((e) =>
-      tokens.every((t) =>
-        `${e.lessonTitle} ${e.unitTitle} ${notes[e.key]}`.toLowerCase().includes(t),
-      ),
-    );
+    const found = createSearch(entries, (e) => [
+      { text: e.lessonTitle, weight: 6 },
+      { text: notes[e.key] ?? "", weight: 3 },
+      { text: e.unitTitle, weight: 2 },
+      { text: e.course.title, weight: 1 },
+    ]).search(q);
+    if (found.empty) return entries;
+    // Grouping below keeps course order, so only membership matters here.
+    const hit = new Set(found.results.map((r) => r.item));
+    return entries.filter((e) => hit.has(e));
   }, [entries, q, notes]);
 
   // Group by course then unit; lessons stay in course order.

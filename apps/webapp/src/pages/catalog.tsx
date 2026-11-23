@@ -12,6 +12,8 @@ import {
   X,
 } from "lucide-react";
 import { CourseArt, CourseCard } from "@/components/course-card";
+import { TopicBrowser, topicView } from "@/components/topic-browser";
+import { courseScores } from "@/lib/explore-search";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,6 +36,7 @@ import {
   SORTS,
   entries,
   facetCount,
+  INSTITUTIONS,
   matches,
   primary,
   sortEntries,
@@ -50,6 +53,7 @@ import { cn } from "@/lib/utils";
 const FLAT_FACETS: { key: FacetKey; title: string; options: { value: string; label: string }[] }[] =
   [
     { key: "lvl", title: "Level", options: LEVELS.map((l) => ({ value: l, label: l })) },
+    { key: "inst", title: "Institution", options: INSTITUTIONS },
     {
       key: "dur",
       title: "Duration",
@@ -59,7 +63,7 @@ const FLAT_FACETS: { key: FacetKey; title: string; options: { value: string; lab
     { key: "prog", title: "My progress", options: PROGRESS },
     { key: "avail", title: "Availability", options: AVAIL },
   ];
-const ALL_KEYS: FacetKey[] = ["field", "disc", "lvl", "dur", "feat", "prog", "avail"];
+const ALL_KEYS: FacetKey[] = ["field", "disc", "lvl", "inst", "dur", "feat", "prog", "avail"];
 
 function useFilters() {
   const [params, setParams] = useSearchParams();
@@ -68,6 +72,7 @@ function useFilters() {
     field: params.getAll("field"),
     disc: params.getAll("disc"),
     lvl: params.getAll("lvl"),
+    inst: params.getAll("inst"),
     dur: params.getAll("dur"),
     feat: params.getAll("feat"),
     prog: params.getAll("prog"),
@@ -75,6 +80,7 @@ function useFilters() {
   };
   const sort = params.get("sort") ?? "recommended";
   const view = params.get("view") === "list" ? "list" : "grid";
+  const by = params.get("by") === "topics" ? "topics" : "courses";
   // The URL is the single source of truth, so searches and filters can be shared and survive the back button.
   const update = (fn: (p: URLSearchParams) => void) => {
     const next = new URLSearchParams(params);
@@ -92,7 +98,7 @@ function useFilters() {
   const set = (key: string, value: string, empty = "") =>
     update((p) => (value === empty ? p.delete(key) : p.set(key, value)));
   const clear = () => update((p) => ["q", ...ALL_KEYS].forEach((k) => p.delete(k)));
-  return { filters, sort, view, toggle, set, clear };
+  return { filters, sort, view, by, toggle, set, clear };
 }
 
 function Option({
@@ -198,7 +204,7 @@ function FilterPanel({
   return (
     <div className="space-y-6">
       <FieldTree filters={filters} toggle={toggle} state={state} />
-      {FLAT_FACETS.map((f) => (
+      {FLAT_FACETS.filter((f) => f.options.length > 0).map((f) => (
         <fieldset key={f.key} className="space-y-2">
           <legend className="mb-1 text-base font-semibold">{f.title}</legend>
           {f.options.map((o) => (
@@ -307,7 +313,7 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
 }
 
 export function Catalog() {
-  const { filters, sort, view, toggle, set, clear } = useFilters();
+  const { filters, sort, view, by, toggle, set, clear } = useFilters();
   const completed = useStore((s) => s.completed);
   const quizzes = useStore((s) => s.quizzes);
   const enrolled = useStore((s) => s.enrolled);
@@ -319,9 +325,18 @@ export function Catalog() {
       sortEntries(
         entries.filter((e) => matches(e, filters, state)),
         sort,
+        filters.q,
       ),
     [filters, state, sort],
   );
+  // Topics are searched lesson by lesson, so the course-level text match is left out of the filters.
+  const topicEntries = useMemo(
+    () => entries.filter((e) => matches(e, { ...filters, q: "" }, state)),
+    [filters, state],
+  );
+  const topics = useMemo(() => topicView(topicEntries, filters.q), [topicEntries, filters.q]);
+  const topicCount = topics.count;
+  const partialCourses = by === "courses" && !!courseScores(filters.q)?.partial;
   const label = (key: FacetKey, v: string) =>
     key === "field"
       ? (fieldById(v)?.name ?? v)
@@ -336,22 +351,41 @@ export function Catalog() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <header className="mb-6 space-y-1">
-        <h1 className="text-3xl font-semibold">Explore courses</h1>
+        <h1 className="text-3xl font-semibold">Explore</h1>
         <p className="text-muted-foreground">
           {entries.length} courses across {fields.length} fields. Search, filter and sort to find
           what to learn next.
         </p>
       </header>
 
+      <div className="mb-4 inline-flex rounded-lg border p-0.5" role="group" aria-label="Browse by">
+        {(
+          [
+            ["courses", "Courses"],
+            ["topics", "Topics"],
+          ] as const
+        ).map(([v, name]) => (
+          <Button
+            key={v}
+            variant={by === v ? "secondary" : "ghost"}
+            className="h-10 px-5 text-base"
+            aria-pressed={by === v}
+            onClick={() => set("by", v, "courses")}
+          >
+            {name}
+          </Button>
+        ))}
+      </div>
+
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative min-w-60 flex-1">
           <Search className="pointer-events-none absolute top-3 left-3.5 size-4 text-muted-foreground" />
           <Input
             className="h-11 pl-10 text-base"
-            placeholder="Search courses, fields and topics"
+            placeholder={by === "topics" ? "Search topics" : "Search courses, fields and topics"}
             value={filters.q}
             onChange={(e) => set("q", e.target.value)}
-            aria-label="Search courses"
+            aria-label={by === "topics" ? "Search topics" : "Search courses"}
           />
         </div>
         <Sheet open={sheet} onOpenChange={setSheet}>
@@ -367,41 +401,45 @@ export function Catalog() {
             </div>
           </SheetContent>
         </Sheet>
-        <Select
-          value={sort}
-          onValueChange={(v) => set("sort", v as string, "recommended")}
-          items={SORTS}
-        >
-          <SelectTrigger className="h-11 w-48" aria-label="Sort courses">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SORTS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
+        {by === "courses" && (
+          <Select
+            value={sort}
+            onValueChange={(v) => set("sort", v as string, "recommended")}
+            items={SORTS}
+          >
+            <SelectTrigger className="h-11 w-48" aria-label="Sort courses">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORTS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {by === "courses" && (
+          <div className="flex rounded-lg border p-0.5" role="group" aria-label="Layout">
+            {(
+              [
+                ["grid", LayoutGrid, "Grid"],
+                ["list", List, "List"],
+              ] as const
+            ).map(([v, Icon, name]) => (
+              <Button
+                key={v}
+                variant={view === v ? "secondary" : "ghost"}
+                size="icon"
+                aria-label={`${name} view`}
+                aria-pressed={view === v}
+                onClick={() => set("view", v, "grid")}
+              >
+                <Icon />
+              </Button>
             ))}
-          </SelectContent>
-        </Select>
-        <div className="flex rounded-lg border p-0.5" role="group" aria-label="Layout">
-          {(
-            [
-              ["grid", LayoutGrid, "Grid"],
-              ["list", List, "List"],
-            ] as const
-          ).map(([v, Icon, name]) => (
-            <Button
-              key={v}
-              variant={view === v ? "secondary" : "ghost"}
-              size="icon"
-              aria-label={`${name} view`}
-              aria-pressed={view === v}
-              onClick={() => set("view", v, "grid")}
-            >
-              <Icon />
-            </Button>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {active > 0 && (
@@ -428,9 +466,30 @@ export function Catalog() {
         </aside>
         <section aria-live="polite" className="min-w-0">
           <p className="mb-3 text-sm text-muted-foreground" role="status">
-            {results.length} {results.length === 1 ? "course" : "courses"}
+            {by === "topics"
+              ? `${topicCount} ${topicCount === 1 ? "topic" : "topics"}`
+              : `${results.length} ${results.length === 1 ? "course" : "courses"}`}
           </p>
-          {results.length === 0 ? (
+          {partialCourses && results.length > 0 && (
+            <p className="mb-4 rounded-lg border border-dashed p-3 text-muted-foreground">
+              No course matches every word. These match the most.
+            </p>
+          )}
+          {by === "topics" ? (
+            topicCount === 0 ? (
+              <div className="rounded-xl border border-dashed p-10 text-center">
+                <h2 className="text-xl font-semibold">No topics match</h2>
+                <p className="mt-1 text-muted-foreground">
+                  Try a different search or remove a filter.
+                </p>
+                <Button className="mt-4" variant="outline" onClick={clear}>
+                  Clear all filters
+                </Button>
+              </div>
+            ) : (
+              <TopicBrowser view={topics} />
+            )
+          ) : results.length === 0 ? (
             <div className="rounded-xl border border-dashed p-10 text-center">
               <h2 className="text-xl font-semibold">No courses match</h2>
               <p className="mt-1 text-muted-foreground">
