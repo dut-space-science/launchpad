@@ -52,6 +52,7 @@ import { LessonFiles } from "@/components/lesson-files";
 import { actions, getState, useStore } from "@/store/store";
 import { NotFound } from "@/pages/not-found";
 import { cn } from "@/lib/utils";
+import { Inline } from "@/components/rich";
 
 export function Learn() {
   const { slug, lessonId, moduleId } = useParams();
@@ -520,7 +521,9 @@ function LessonView({
             </h2>
             <ul className="list-disc space-y-1.5 pl-5">
               {lesson.takeaways.map((t) => (
-                <li key={t}>{t}</li>
+                <li key={t}>
+                  <Inline text={t} />
+                </li>
               ))}
             </ul>
           </section>

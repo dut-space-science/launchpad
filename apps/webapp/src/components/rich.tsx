@@ -17,18 +17,28 @@ export function Tex({ tex, display = false }: { tex: string; display?: boolean }
   return <span dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-/** Tiny inline markup: **bold**, *italic*, and $LaTeX$. */
+/**
+ * Tiny inline markup: **bold**, *italic* and $LaTeX$. Maths is matched first and may sit inside bold or italic, so a
+ * `*` inside a formula ($c^*$) is never mistaken for emphasis.
+ */
+const MATH = String.raw`\$[^$]+\$`;
+const INLINE = new RegExp(`(${MATH}|\\*\\*(?:${MATH}|[^*$])+\\*\\*|\\*(?:${MATH}|[^*$])+\\*)`, "g");
+
 export function Inline({ text }: { text: string }) {
-  const parts = text.split(/(\$[^$]+\$|\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  const parts = text.split(INLINE);
   return (
     <>
       {parts.map((p, i) =>
         p.startsWith("$") && p.length > 2 ? (
           <Tex key={i} tex={p.slice(1, -1)} />
-        ) : p.startsWith("**") ? (
-          <strong key={i}>{p.slice(2, -2)}</strong>
+        ) : p.startsWith("**") && p.length > 4 ? (
+          <strong key={i}>
+            <Inline text={p.slice(2, -2)} />
+          </strong>
         ) : p.startsWith("*") && p.length > 2 ? (
-          <em key={i}>{p.slice(1, -1)}</em>
+          <em key={i}>
+            <Inline text={p.slice(1, -1)} />
+          </em>
         ) : (
           <Fragment key={i}>{p}</Fragment>
         ),

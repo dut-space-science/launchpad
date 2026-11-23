@@ -74,7 +74,9 @@ export function Quiz({
                     checked={sel}
                     onChange={() => setPicked((p) => p.map((v, i) => (i === qi ? oi : v)))}
                   />
-                  <span className="flex-1">{o}</span>
+                  <span className="flex-1">
+                    <Inline text={o} />
+                  </span>
                   {right && <CheckCircle2 className="size-4 text-success" />}
                   {wrong && <XCircle className="size-4 text-destructive" />}
                 </label>
@@ -86,7 +88,7 @@ export function Quiz({
               <span className="font-semibold">
                 {picked[qi] === q.answer ? "Correct. " : "Not quite. "}
               </span>
-              {q.why}
+              <Inline text={q.why} />
             </p>
           )}
         </fieldset>

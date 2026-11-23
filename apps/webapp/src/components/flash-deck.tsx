@@ -4,6 +4,7 @@ import type { Course } from "@/data/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { actions, useStore } from "@/store/store";
+import { Inline } from "@/components/rich";
 
 /** Spaced-repetition deck (Leitner boxes) for one unit's glossary terms. */
 export function FlashDeck({ course, moduleId }: { course: Course; moduleId: string }) {
@@ -72,7 +73,7 @@ export function FlashDeck({ course, moduleId }: { course: Course; moduleId: stri
                   : "mt-4 block font-heading text-3xl font-semibold"
               }
             >
-              {flip ? card.def : card.term}
+              <Inline text={flip ? card.def : card.term} />
             </span>
             {!flip && (
               <span className="mt-6 block text-sm text-muted-foreground">

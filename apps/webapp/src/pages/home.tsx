@@ -10,6 +10,7 @@ import { unitStatus } from "@/lib/mastery";
 import { minutes } from "@/lib/format";
 import { useStore } from "@/store/store";
 import { cn } from "@/lib/utils";
+import { Inline } from "@/components/rich";
 
 const HERO_BTN = "h-11 bg-[#3fb06a] px-5 text-base text-[#07170d] hover:bg-[#4bc079]";
 const HERO_BTN_OUTLINE =
@@ -145,7 +146,9 @@ function ResumeHero({ courseSlug, lessonId }: { courseSlug: string; lessonId: st
               <h2 className="mb-1.5 text-base font-semibold">Key points</h2>
               <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
                 {lesson.takeaways.slice(0, 3).map((t) => (
-                  <li key={t}>{t}</li>
+                  <li key={t}>
+                    <Inline text={t} />
+                  </li>
                 ))}
               </ul>
             </div>
