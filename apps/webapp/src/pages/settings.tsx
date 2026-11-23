@@ -25,6 +25,7 @@ import { bytes } from "@/lib/format";
 import { allowFolder, connectFolder, disconnectFolder, useFolder } from "@/store/folder";
 import { actions, useStore } from "@/store/store";
 import { courses } from "@/data/courses";
+import { contentStatus, useLaunchpadCourses } from "@/content/load";
 
 export function SettingsPage() {
   const name = useStore((s) => s.profile.name);
@@ -478,7 +479,24 @@ function StorageCard() {
         {info.writeError && (
           <p className="text-sm text-destructive">The last save failed: {info.writeError}</p>
         )}
+        {contentStatus.error && (
+          <p className="text-sm text-destructive">
+            The latest courses could not be installed: {contentStatus.error}
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
+          {(contentStatus.source === "default" || info.engine !== "sqlite") && (
+            <Button
+              variant="outline"
+              onClick={() =>
+                void useLaunchpadCourses().catch((e: unknown) =>
+                  toast.error(e instanceof Error ? e.message : "Could not reinstall the courses"),
+                )
+              }
+            >
+              Reinstall Launchpad courses
+            </Button>
+          )}
           <Button
             variant="outline"
             disabled={info.engine !== "sqlite"}

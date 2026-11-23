@@ -26,6 +26,12 @@ async function fingerprint(bytes: Uint8Array<ArrayBuffer>) {
   return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** What the last start-up did with the course library, for Settings to show. */
+export const contentStatus: { source: string | null; error: string | null } = {
+  source: null,
+  error: null,
+};
+
 function publish(c: Content) {
   setFields(c.fields);
   setCourses(c.courses);
@@ -41,6 +47,7 @@ export async function loadContent() {
   }
 
   const source = await db.getMeta("content_source");
+  contentStatus.source = source;
   if (source === null) return publish(EMPTY); // first run, or wiped: show setup
 
   // Launchpad's own library follows the app: refresh the installed copy when the shipped file changes.
@@ -53,8 +60,11 @@ export async function loadContent() {
         await db.batch(installStatements(rows, version, "default"));
         return publish(contentFromRows(rows));
       }
-    } catch {
-      // Offline or the server is down: carry on with the copy already in the browser database.
+    } catch (e) {
+      // Offline, the server is down, or the update did not install: carry on with the copy already in the browser
+      // database, but say so, because otherwise the app silently shows old courses.
+      contentStatus.error = e instanceof Error ? e.message : String(e);
+      console.warn("Launchpad could not update its courses; using the installed copy.", e);
     }
   }
   return publish(contentFromRows(await db.contentRows()));
