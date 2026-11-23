@@ -110,7 +110,10 @@ function CourseInner({ slug }: { slug: string }) {
               </span>
               {institutions.length > 0 && (
                 <span className="flex items-center gap-1.5">
-                  <Landmark className="size-4" /> Material from {institutions.join(", ")}
+                  <Landmark className="size-4" /> Material from{" "}
+                  {institutions.length > 3
+                    ? `${institutions.slice(0, 3).join(", ")} and ${institutions.length - 3} more`
+                    : institutions.join(", ")}
                 </span>
               )}
             </div>
