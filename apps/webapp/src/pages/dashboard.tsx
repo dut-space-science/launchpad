@@ -4,6 +4,15 @@ import { Award, Bookmark, GraduationCap, Layers, NotebookPen, PlayCircle } from 
 import { CourseMasteryBar, UnitLadder, MasteryBadge } from "@/components/mastery";
 import { buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { Course } from "@/data/types";
+import type { State } from "@/store/store";
 import { courses, findLesson, getCourse } from "@/data/courses";
 import { ActivityHeatmap, ActivitySpark, QuizScores } from "@/components/progress-charts";
 import { unitStatus } from "@/lib/mastery";
@@ -88,6 +97,11 @@ export function Dashboard() {
   const [params, setParams] = useSearchParams();
   const bar = useRef<HTMLDivElement>(null);
   const wanted = params.get("tab");
+  // The course card on show: the one in the address, else the one studied last, else the first.
+  const shown =
+    enrolled.find((c) => c.slug === params.get("course")) ??
+    enrolled.find((c) => c.slug === s.last?.course) ??
+    enrolled[0];
   const tab = ["courses", "flashcards", "bookmarks", "notebook"].includes(wanted ?? "")
     ? (wanted as string)
     : "courses";
@@ -181,77 +195,40 @@ export function Dashboard() {
               </Link>
             </div>
           )}
-          {enrolled.map((c) => {
-            const p = courseProgress(c, s);
-            return (
-              <section
-                key={c.slug}
-                className="space-y-5 rounded-xl border bg-card p-5"
-                aria-labelledby={`d-${c.slug}`}
+          {enrolled.length > 1 && (
+            <div className="flex flex-wrap items-center gap-3">
+              <label id="course-pick" className="text-muted-foreground">
+                Course
+              </label>
+              <Select
+                value={shown.slug}
+                onValueChange={(v) => {
+                  const next = new URLSearchParams(params);
+                  next.set("course", v as string);
+                  setParams(next, { replace: true });
+                }}
+                items={enrolled.map((c) => ({ value: c.slug, label: c.title }))}
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h2 id={`d-${c.slug}`} className="text-xl font-semibold">
-                      <Link to={`/courses/${c.slug}`} className="hover:text-primary">
-                        {c.title}
-                      </Link>
-                    </h2>
-                    <p className="text-muted-foreground">
-                      {p.done} of {p.lessonsTotal} lessons finished, {p.quizzesPassed} of{" "}
-                      {p.quizzesTotal} quizzes passed
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    {p.complete && (
-                      <Link
-                        to={`/certificate/${c.slug}`}
-                        className={buttonVariants({ variant: "outline" })}
-                      >
-                        <Award /> Certificate
-                      </Link>
-                    )}
-                    <Link
-                      to={`/learn/${c.slug}`}
-                      className={cn(
-                        buttonVariants(),
-                        "bg-gold text-gold-foreground hover:bg-gold/90",
-                      )}
-                    >
-                      <PlayCircle /> {p.complete ? "Review" : "Continue"}
-                    </Link>
-                  </div>
-                </div>
-                <CourseMasteryBar course={c} />
-                <div>
-                  <h3 className="mb-2 text-base font-semibold">Units</h3>
-                  <ul className="divide-y">
-                    {c.modules.map((m, i) => {
-                      const st = unitStatus(c, m, s);
-                      return (
-                        <li
-                          key={m.id}
-                          className="grid items-center gap-x-4 gap-y-1 py-2.5 sm:grid-cols-[minmax(0,1fr)_9rem_8.5rem]"
-                        >
-                          <Link
-                            to={`/learn/${c.slug}/${st.lessons.find((l) => !l.done)?.id ?? m.lessons[0].id}`}
-                            className="truncate font-medium hover:text-primary"
-                          >
-                            Unit {i + 1}: {m.title}
-                          </Link>
-                          <UnitLadder course={c} moduleId={m.id} />
-                          <MasteryBadge level={st.level} className="sm:justify-self-end" />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="mb-2 text-base font-semibold">Best quiz score by unit</h3>
-                  <QuizScores course={c} />
-                </div>
-              </section>
-            );
-          })}
+                <SelectTrigger className="h-11 w-full max-w-md" aria-labelledby="course-pick">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {enrolled.map((c) => (
+                    <SelectItem key={c.slug} value={c.slug}>
+                      {c.title}
+                      <span className="ml-3 text-muted-foreground tabular-nums">
+                        {courseProgress(c, s).pct}%
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-muted-foreground">
+                {enrolled.length} courses, showing one at a time
+              </span>
+            </div>
+          )}
+          {shown && <CoursePanel c={shown} s={s} />}
         </TabsContent>
 
         <TabsContent value="flashcards" className="pt-6 text-base">
@@ -336,5 +313,68 @@ export function Dashboard() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/** One course's progress: mastery, units and best quiz scores. */
+function CoursePanel({ c, s }: { c: Course; s: State }) {
+  const p = courseProgress(c, s);
+  return (
+    <section className="space-y-5 rounded-xl border bg-card p-5" aria-labelledby={`d-${c.slug}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id={`d-${c.slug}`} className="text-xl font-semibold">
+            <Link to={`/courses/${c.slug}`} className="hover:text-primary">
+              {c.title}
+            </Link>
+          </h2>
+          <p className="text-muted-foreground">
+            {p.done} of {p.lessonsTotal} lessons finished, {p.quizzesPassed} of {p.quizzesTotal}{" "}
+            quizzes passed
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {p.complete && (
+            <Link to={`/certificate/${c.slug}`} className={buttonVariants({ variant: "outline" })}>
+              <Award /> Certificate
+            </Link>
+          )}
+          <Link
+            to={`/learn/${c.slug}`}
+            className={cn(buttonVariants(), "bg-gold text-gold-foreground hover:bg-gold/90")}
+          >
+            <PlayCircle /> {p.complete ? "Review" : "Continue"}
+          </Link>
+        </div>
+      </div>
+      <CourseMasteryBar course={c} />
+      <div>
+        <h3 className="mb-2 text-base font-semibold">Units</h3>
+        <ul className="divide-y">
+          {c.modules.map((m, i) => {
+            const st = unitStatus(c, m, s);
+            return (
+              <li
+                key={m.id}
+                className="grid items-center gap-x-4 gap-y-1 py-2.5 sm:grid-cols-[minmax(0,1fr)_9rem_8.5rem]"
+              >
+                <Link
+                  to={`/learn/${c.slug}/${st.lessons.find((l) => !l.done)?.id ?? m.lessons[0].id}`}
+                  className="truncate font-medium hover:text-primary"
+                >
+                  Unit {i + 1}: {m.title}
+                </Link>
+                <UnitLadder course={c} moduleId={m.id} />
+                <MasteryBadge level={st.level} className="sm:justify-self-end" />
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <div>
+        <h3 className="mb-2 text-base font-semibold">Best quiz score by unit</h3>
+        <QuizScores course={c} />
+      </div>
+    </section>
   );
 }
