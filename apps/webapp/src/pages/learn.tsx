@@ -459,39 +459,54 @@ function LessonView({
   const files = useAttachments(course.slug, lesson.id);
   const hasNote = notes.trim().length > 0;
   const wide = useStore((s) => s.focusMode) && !!lesson.videos?.length;
+  const lessonActions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        size="sm"
+        variant={done ? "secondary" : "default"}
+        onClick={() => {
+          actions.toggleComplete(course.slug, lesson.id);
+          if (!done) toast.success("Lesson marked complete");
+        }}
+      >
+        {done ? <CheckCircle2 className="text-success" /> : <Check />}{" "}
+        {done ? "Completed" : "Mark complete"}
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => actions.toggleBookmark(course.slug, lesson.id)}
+      >
+        {marked ? <BookmarkCheck /> : <Bookmark />} {marked ? "Bookmarked" : "Bookmark"}
+      </Button>
+      <span className="text-xs text-muted-foreground">{minutes(lesson.minutes)}</span>
+    </div>
+  );
   return (
     <article
       data-focus={wide || undefined}
       className={cn("mx-auto space-y-6", wide ? "max-w-none" : "max-w-4xl")}
     >
-      <header className={cn("space-y-2", wide && "mx-auto w-full max-w-3xl")}>
-        <div className="text-sm text-muted-foreground">{moduleTitle}</div>
-        <h1 className="text-3xl font-bold tracking-tight text-balance">{lesson.title}</h1>
-        <p className="text-muted-foreground">{lesson.summary}</p>
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <Button
-            size="sm"
-            variant={done ? "secondary" : "default"}
-            onClick={() => {
-              actions.toggleComplete(course.slug, lesson.id);
-              if (!done) toast.success("Lesson marked complete");
-            }}
-          >
-            {done ? <CheckCircle2 className="text-success" /> : <Check />}{" "}
-            {done ? "Completed" : "Mark complete"}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => actions.toggleBookmark(course.slug, lesson.id)}
-          >
-            {marked ? <BookmarkCheck /> : <Bookmark />} {marked ? "Bookmarked" : "Bookmark"}
-          </Button>
-          <span className="text-xs text-muted-foreground">{minutes(lesson.minutes)}</span>
-        </div>
-      </header>
-
-      {lesson.videos?.length ? <LessonVideos key={key} videos={lesson.videos} /> : null}
+      {wide ? (
+        // Focus mode: the video leads, and the lesson shrinks to one line under it.
+        <>
+          <LessonVideos key={key} videos={lesson.videos!} />
+          <header className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b pb-4">
+            <h1 className="min-w-0 text-xl font-semibold tracking-tight">{lesson.title}</h1>
+            {lessonActions}
+          </header>
+        </>
+      ) : (
+        <>
+          <header className="space-y-2">
+            <div className="text-sm text-muted-foreground">{moduleTitle}</div>
+            <h1 className="text-3xl font-bold tracking-tight text-balance">{lesson.title}</h1>
+            <p className="text-muted-foreground">{lesson.summary}</p>
+            <div className="pt-1">{lessonActions}</div>
+          </header>
+          {lesson.videos?.length ? <LessonVideos key={key} videos={lesson.videos} /> : null}
+        </>
+      )}
 
       <Tabs defaultValue="lesson" className={cn(wide && "mx-auto w-full max-w-3xl")}>
         <TabsList variant="line" className="w-fit justify-start">

@@ -188,13 +188,9 @@
   }
 }
 
+/* Lesson text fills the lesson column, the same width as the video panel above it. */
 .prose-lesson {
-  max-width: 68ch;
   font-size: 1.0625rem;
-}
-/* Focus mode: the column is already centred and capped by the page, so the text fills it. */
-[data-focus] .prose-lesson {
-  max-width: none;
 }
 :is(.prose-lesson, .prose-md) p {
   @apply my-4 leading-[1.75];
