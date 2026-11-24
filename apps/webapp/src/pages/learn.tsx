@@ -491,13 +491,7 @@ function LessonView({
         </div>
       </header>
 
-      {lesson.videos?.length ? (
-        <LessonVideos
-          key={key}
-          videos={lesson.videos}
-          listClassName={cn(wide && "mx-auto w-full max-w-3xl")}
-        />
-      ) : null}
+      {lesson.videos?.length ? <LessonVideos key={key} videos={lesson.videos} /> : null}
 
       <Tabs defaultValue="lesson" className={cn(wide && "mx-auto w-full max-w-3xl")}>
         <TabsList variant="line" className="w-fit justify-start">
