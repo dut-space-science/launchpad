@@ -4,6 +4,7 @@ import { useTheme } from "next-themes";
 import {
   Download,
   FolderOpen,
+  Smartphone,
   Monitor,
   Moon,
   ShieldAlert,
@@ -34,6 +35,7 @@ import { allowFolder, connectFolder, disconnectFolder, useFolder } from "@/store
 import { actions, useStore } from "@/store/store";
 import { courses } from "@/data/courses";
 import { contentStatus, useLaunchpadCourses } from "@/content/load";
+import { installApp, useInstallState } from "@/lib/pwa";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
@@ -384,6 +386,36 @@ function StudySection() {
   );
 }
 
+/** Install as an app. It then opens in its own window and works without a connection (video lectures still need one). */
+function AppRow() {
+  const app = useInstallState();
+  if (!app.supported) return null;
+  const hint = app.installed
+    ? "Launchpad is installed. It opens in its own window and works offline; video lectures need a connection."
+    : app.canInstall
+      ? "Open Launchpad in its own window and use it offline. Video lectures still need a connection."
+      : app.ios
+        ? "In Safari, tap Share, then Add to Home Screen."
+        : "Use your browser's menu and choose Install app or Add to Home screen.";
+  return (
+    <Row label="Install the app" hint={hint}>
+      {app.installed ? (
+        <span className="flex items-center gap-1.5 text-sm font-medium text-primary">
+          <ShieldCheck className="size-4" /> Installed
+        </span>
+      ) : app.canInstall ? (
+        <Button
+          onClick={async () => {
+            if (await installApp()) toast.success("Launchpad installed");
+          }}
+        >
+          <Smartphone /> Install app
+        </Button>
+      ) : null}
+    </Row>
+  );
+}
+
 /** The learning folder, installed courses, space used, protection from clean-up and the raw database file. */
 function StorageSection() {
   const folder = useFolder();
@@ -403,6 +435,7 @@ function StorageSection() {
 
   return (
     <Section id="storage" title="Files and storage">
+      <AppRow />
       <Row
         label="Learning folder"
         hint={

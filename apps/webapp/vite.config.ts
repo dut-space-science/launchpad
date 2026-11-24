@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite-plus";
 import { buildContentDb } from "./scripts/content-db";
+import { pwa } from "./scripts/pwa-plugin";
 
 /** Builds public/content.sqlite from db/*.sql on start-up and whenever a .sql file changes in dev. */
 function contentDb(): Plugin {
@@ -31,7 +32,7 @@ function contentDb(): Plugin {
 // Relative base + HashRouter => deployable from any static host / sub-path / file share.
 export default defineConfig({
   base: "./",
-  plugins: [contentDb(), react(), tailwindcss()],
+  plugins: [contentDb(), react(), tailwindcss(), pwa()],
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
   // SQLite (WebAssembly) runs in a module worker; its wasm file must not be pre-bundled by the dev server.
   optimizeDeps: { exclude: ["@sqlite.org/sqlite-wasm"] },

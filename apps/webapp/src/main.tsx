@@ -4,10 +4,12 @@ import { HashRouter } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { loadContent } from "./content/load";
 import { OtherTabError, bootPersistence } from "./store/persistence";
+import { registerServiceWorker } from "./lib/pwa";
 import { removeNetlifyBadge } from "./lib/remove-netlify-badge";
 import "./index.css";
 
 removeNetlifyBadge();
+registerServiceWorker();
 
 const root = createRoot(document.getElementById("root")!);
 
