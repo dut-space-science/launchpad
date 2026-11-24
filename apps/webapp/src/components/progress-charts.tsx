@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import type { Course } from "@/data/types";
 import { QUIZ_PASS } from "@/data/courses";
@@ -25,11 +25,32 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 /** Study activity: one column per week, one row per weekday, four quantised levels of the green ramp. */
 export function ActivityHeatmap({
   activity,
-  weeks = 40,
+  maxWeeks = 52,
 }: {
   activity: Record<string, number>;
-  weeks?: number;
+  /** The most weeks to show: a year. Fewer are shown when the space is narrower. */
+  maxWeeks?: number;
 }) {
+  const LABEL = 32; // the weekday-label column, in px
+  const GAP = 3;
+  const MIN_CELL = 12;
+  const box = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  // Fit to the space: as many weeks as keep every square at least MIN_CELL wide, up to a year, then the squares share
+  // whatever width is left. So the chart fills its card on a wide screen and shows fewer weeks (not a scrollbar) on a phone.
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setWidth(el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const weeks = width
+    ? Math.max(8, Math.min(maxWeeks, Math.floor((width - LABEL) / (MIN_CELL + GAP))))
+    : 26;
+
   const today = new Date();
   const start = new Date(today);
   start.setDate(today.getDate() - today.getDay() - (weeks - 1) * 7);
@@ -60,30 +81,20 @@ export function ActivityHeatmap({
     const show = starts[w] || (w === 0 && !starts.slice(1, 4).some(Boolean));
     return first && show ? first.toLocaleDateString(undefined, { month: "short" }) : "";
   };
-  const scroller = useRef<HTMLDivElement>(null);
-  // On narrow screens the grid scrolls; start at the most recent weeks.
-  useEffect(() => {
-    const el = scroller.current;
-    if (el) el.scrollLeft = el.scrollWidth;
-  }, []);
+  const showTip = (el: HTMLElement, c: { day: Date; n: number }) =>
+    setTip({ x: el.offsetLeft + el.offsetWidth / 2, y: el.offsetTop, text: describe(c) });
 
-  const CELL = 14;
-  const GAP = 3;
   return (
     <figure className="space-y-3">
       <figcaption className="text-sm text-muted-foreground">
         {plural(activeDays, "active day")} and {plural(total, "action")} in the last {weeks} weeks
       </figcaption>
-      <div
-        ref={scroller}
-        className="relative overflow-x-auto pb-1"
-        onPointerLeave={() => setTip(null)}
-      >
+      <div ref={box} className="relative" onPointerLeave={() => setTip(null)}>
         <div
-          className="grid w-max text-xs text-muted-foreground"
+          className="grid w-full text-xs text-muted-foreground"
           style={{
-            gridTemplateColumns: `2rem repeat(${weeks}, ${CELL}px)`,
-            gridTemplateRows: `1.25rem repeat(7, ${CELL}px)`,
+            gridTemplateColumns: `${LABEL}px repeat(${weeks}, minmax(0, 1fr))`,
+            gridTemplateRows: "1.25rem",
             gap: GAP,
           }}
         >
@@ -96,7 +107,7 @@ export function ActivityHeatmap({
           {Array.from({ length: 7 }, (_, d) => (
             <div key={d} className="contents">
               <span
-                className="leading-[14px]"
+                className="flex items-center"
                 style={{ gridColumn: 1, gridRow: d + 2 }}
                 aria-hidden
               >
@@ -110,15 +121,9 @@ export function ActivityHeatmap({
                     key={w}
                     aria-label={describe(c)}
                     style={{ gridColumn: w + 2, gridRow: d + 2, background: STEP[level(c.n)] }}
-                    className="size-full cursor-default rounded-[3px] focus-visible:outline-2"
-                    onPointerEnter={(e) => {
-                      const r = e.currentTarget;
-                      setTip({ x: r.offsetLeft + CELL / 2, y: r.offsetTop, text: describe(c) });
-                    }}
-                    onFocus={(e) => {
-                      const r = e.currentTarget;
-                      setTip({ x: r.offsetLeft + CELL / 2, y: r.offsetTop, text: describe(c) });
-                    }}
+                    className="aspect-square w-full cursor-default rounded-[3px] focus-visible:outline-2"
+                    onPointerEnter={(e) => showTip(e.currentTarget, c)}
+                    onFocus={(e) => showTip(e.currentTarget, c)}
                     onBlur={() => setTip(null)}
                   />
                 ) : (
