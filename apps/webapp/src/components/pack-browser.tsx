@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Clock, ListChecks, Search } from "lucide-react";
+import { ChevronRight, Clock, ListChecks, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -147,47 +146,50 @@ export function PackBrowser({ course }: { course: Course }) {
           No packs match those filters.
         </p>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2">
+        <ul className="divide-y rounded-xl border bg-card">
           {shown.map((p) => {
             const r = results[`${course.slug}/${p.id}`];
             const idx = course.modules.findIndex((m) => m.id === p.unit);
             return (
-              <li key={p.id} className="flex flex-col gap-3 rounded-xl border bg-card p-5">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <Badge variant="secondary">{KIND_LABEL[p.kind]}</Badge>
-                  {idx >= 0 && <Badge variant="outline">Unit {idx + 1}</Badge>}
-                </div>
-                <h2 className="text-xl font-semibold">{p.title}</h2>
-                <p className="text-muted-foreground">{p.blurb}</p>
-                <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <ListChecks className="size-4" /> {p.kind === "mixed" ? "10" : packSize(p)}{" "}
-                    questions
+              <li key={p.id} className="hover:bg-muted/40">
+                <Link
+                  to={`/practice/${course.slug}/${p.id}`}
+                  title={p.blurb}
+                  aria-label={`${p.title}: ${r ? "practise again" : "start"}`}
+                  className="flex items-center gap-4 px-3 py-2.5"
+                >
+                  <span className="flex min-w-0 flex-1 items-center">
+                    {idx >= 0 && (
+                      <span
+                        className="mr-2 shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
+                        title={course.modules[idx].title}
+                      >
+                        U{idx + 1}
+                      </span>
+                    )}
+                    <span className="truncate font-medium">{p.title}</span>
+                    <Badge variant="secondary" className="ml-2 hidden shrink-0 sm:inline-flex">
+                      {KIND_LABEL[p.kind]}
+                    </Badge>
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="size-4" /> about {p.kind === "mixed" ? 10 : packMinutes(p)}{" "}
-                    min
+                  <span className="hidden items-center gap-4 text-sm text-muted-foreground md:flex">
+                    <span className="flex items-center gap-1.5">
+                      <ListChecks className="size-4" /> {p.kind === "mixed" ? "10" : packSize(p)}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="size-4" /> {p.kind === "mixed" ? 10 : packMinutes(p)} min
+                    </span>
+                    <Dots n={packDifficulty(p)} />
                   </span>
-                  <Dots n={packDifficulty(p)} />
-                </div>
-                <div className="flex items-center justify-between gap-3 border-t pt-3">
-                  <span className="text-sm">
+                  <span className="w-20 shrink-0 text-right text-sm sm:w-28">
                     {r ? (
-                      <>
-                        Best score <strong>{Math.round(r.best * 100)}%</strong>, {r.attempts}{" "}
-                        {r.attempts === 1 ? "attempt" : "attempts"}
-                      </>
+                      <strong>{Math.round(r.best * 100)}%</strong>
                     ) : (
-                      <span className="text-muted-foreground">Not started</span>
+                      <span className="text-muted-foreground">New</span>
                     )}
                   </span>
-                  <Link
-                    to={`/practice/${course.slug}/${p.id}`}
-                    className={buttonVariants({ size: "sm" })}
-                  >
-                    {r ? "Practise again" : "Start"}
-                  </Link>
-                </div>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </Link>
               </li>
             );
           })}
