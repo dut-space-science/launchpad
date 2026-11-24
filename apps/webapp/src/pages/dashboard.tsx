@@ -1,7 +1,9 @@
-import { Link } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Award, Bookmark, GraduationCap, Layers, NotebookPen, PlayCircle } from "lucide-react";
 import { CourseMasteryBar, UnitLadder, MasteryBadge } from "@/components/mastery";
 import { buttonVariants } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { courses, findLesson, getCourse } from "@/data/courses";
 import { ActivityHeatmap, ActivitySpark, QuizScores } from "@/components/progress-charts";
 import { unitStatus } from "@/lib/mastery";
@@ -35,6 +37,15 @@ function Figure({
   );
 }
 
+/** A count shown beside a tab's name; nothing when there is none. */
+function Count({ n }: { n: number }) {
+  return n > 0 ? <span className="text-sm text-muted-foreground tabular-nums">{n}</span> : null;
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <p className="rounded-xl border border-dashed p-8 text-muted-foreground">{children}</p>;
+}
+
 export function Dashboard() {
   const s = useStore((x) => x);
   const now = Date.now();
@@ -64,6 +75,31 @@ export function Dashboard() {
     return c && f ? { c, ...f } : undefined;
   };
   const days = streak(s.activity);
+  const totalDue = dueUnits.reduce((a, u) => a + u.n, 0);
+  const dueByCourse = [...new Set(dueUnits.map((u) => u.c))].map((c) => ({
+    c,
+    units: dueUnits.filter((u) => u.c === c),
+  }));
+  const bookmarked = marks.flatMap((k) => resolve(k) ?? []);
+  const bookmarksByCourse = [...new Set(bookmarked.map((r) => r.c))].map((c) => ({
+    c,
+    items: bookmarked.filter((r) => r.c === c),
+  }));
+  const [params, setParams] = useSearchParams();
+  const bar = useRef<HTMLDivElement>(null);
+  const wanted = params.get("tab");
+  const tab = ["courses", "flashcards", "bookmarks", "notebook"].includes(wanted ?? "")
+    ? (wanted as string)
+    : "courses";
+  // On a narrow screen the tab row scrolls; keep the chosen tab in view (it may come from a link).
+  useEffect(() => {
+    const box = bar.current;
+    const el = box?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+    if (!box || !el) return;
+    const left = el.offsetLeft - box.offsetLeft;
+    if (left < box.scrollLeft || left + el.offsetWidth > box.scrollLeft + box.clientWidth)
+      box.scrollTo({ left: left - 16, behavior: "auto" });
+  }, [tab]);
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-10">
       <header>
@@ -97,20 +133,54 @@ export function Dashboard() {
         <Figure label="Certificates" value={certs.length} />
       </div>
 
-      {enrolled.length === 0 && (
-        <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed p-8">
-          <h2 className="text-xl font-semibold">Start your first course</h2>
-          <p className="max-w-md text-muted-foreground">
-            Your mastery, quiz scores and study activity will show up here as you learn.
-          </p>
-          <Link to="/" className={buttonVariants()}>
-            <GraduationCap /> Browse courses
-          </Link>
-        </div>
-      )}
+      <section className="space-y-3 rounded-xl border bg-card p-5" aria-labelledby="activity-title">
+        <h2 id="activity-title" className="text-xl font-semibold">
+          Study activity
+        </h2>
+        <ActivityHeatmap activity={s.activity} />
+      </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="min-w-0 space-y-6">
+      <Tabs
+        value={tab}
+        onValueChange={(v) => {
+          const next = new URLSearchParams(params);
+          if (v === "courses") next.delete("tab");
+          else next.set("tab", v as string);
+          setParams(next, { replace: true });
+        }}
+      >
+        <div
+          ref={bar}
+          className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] sm:mx-0 sm:px-0"
+        >
+          <TabsList variant="line" className="w-max justify-start">
+            <TabsTrigger value="courses" className="gap-2 px-3 text-base">
+              <GraduationCap /> Courses <Count n={enrolled.length} />
+            </TabsTrigger>
+            <TabsTrigger value="flashcards" className="gap-2 px-3 text-base">
+              <Layers /> Flashcards <Count n={totalDue} />
+            </TabsTrigger>
+            <TabsTrigger value="bookmarks" className="gap-2 px-3 text-base">
+              <Bookmark /> Bookmarks <Count n={bookmarked.length} />
+            </TabsTrigger>
+            <TabsTrigger value="notebook" className="gap-2 px-3 text-base">
+              <NotebookPen /> Notebook <Count n={notes.length} />
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="courses" className="space-y-6 pt-6 text-base">
+          {enrolled.length === 0 && (
+            <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed p-8">
+              <h2 className="text-xl font-semibold">Start your first course</h2>
+              <p className="max-w-md text-muted-foreground">
+                Your mastery, quiz scores and study activity will show up here as you learn.
+              </p>
+              <Link to="/" className={buttonVariants()}>
+                <GraduationCap /> Browse courses
+              </Link>
+            </div>
+          )}
           {enrolled.map((c) => {
             const p = courseProgress(c, s);
             return (
@@ -182,78 +252,89 @@ export function Dashboard() {
               </section>
             );
           })}
-          <section className="space-y-3 rounded-xl border bg-card p-5">
-            <h2 className="text-xl font-semibold">Study activity</h2>
-            <ActivityHeatmap activity={s.activity} />
-          </section>
-        </div>
+        </TabsContent>
 
-        <aside className="space-y-4">
-          <section className="space-y-2 rounded-xl border bg-card p-5">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Layers className="size-4" /> Flashcards to review
-            </h2>
-            {dueUnits.length === 0 ? (
-              <p className="text-muted-foreground">Nothing due. Each unit has its own deck.</p>
-            ) : (
-              <ul className="space-y-1.5">
-                {dueUnits.map((u) => (
-                  <li key={u.m.id}>
-                    <Link
-                      className="flex items-center justify-between gap-2 hover:text-primary"
-                      to={`/learn/${u.c.slug}/cards/${u.m.id}`}
-                    >
-                      <span className="truncate">
-                        Unit {u.i + 1}: {u.m.title}
-                      </span>
-                      <span className="shrink-0 font-semibold">{u.n}</span>
+        <TabsContent value="flashcards" className="pt-6 text-base">
+          {dueByCourse.length === 0 ? (
+            <Empty>Nothing due. Each unit has its own deck.</Empty>
+          ) : (
+            <div className="space-y-6">
+              {dueByCourse.map(({ c, units }) => (
+                <section key={c.slug} className="rounded-xl border bg-card p-5">
+                  <h2 className="text-lg font-semibold">
+                    <Link to={`/courses/${c.slug}`} className="hover:text-primary">
+                      {c.title}
                     </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-          <section className="space-y-2 rounded-xl border bg-card p-5">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Bookmark className="size-4" /> Bookmarks
-            </h2>
-            {marks.length === 0 ? (
-              <p className="text-muted-foreground">Bookmark a lesson to find it here.</p>
-            ) : (
-              <ul className="space-y-1.5">
-                {marks.map((k) => {
-                  const r = resolve(k);
-                  return (
-                    r && (
-                      <li key={k}>
+                  </h2>
+                  <ul className="mt-2 divide-y">
+                    {units.map((u) => (
+                      <li key={u.m.id}>
                         <Link
-                          className="hover:text-primary"
-                          to={`/learn/${r.c.slug}/${r.lesson.id}`}
+                          className="flex items-center justify-between gap-4 py-2.5 hover:text-primary"
+                          to={`/learn/${u.c.slug}/cards/${u.m.id}`}
                         >
-                          {r.lesson.title}
+                          <span className="min-w-0 truncate">
+                            Unit {u.i + 1}: {u.m.title}
+                          </span>
+                          <span className="shrink-0 font-semibold tabular-nums">
+                            {u.n} {u.n === 1 ? "card" : "cards"}
+                          </span>
                         </Link>
                       </li>
-                    )
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-          <section className="space-y-2 rounded-xl border bg-card p-5">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <NotebookPen className="size-4" /> Notebook
-            </h2>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="bookmarks" className="pt-6 text-base">
+          {bookmarked.length === 0 ? (
+            <Empty>Bookmark a lesson to find it here.</Empty>
+          ) : (
+            <div className="space-y-6">
+              {bookmarksByCourse.map(({ c, items }) => (
+                <section key={c.slug} className="rounded-xl border bg-card p-5">
+                  <h2 className="text-lg font-semibold">
+                    <Link to={`/courses/${c.slug}`} className="hover:text-primary">
+                      {c.title}
+                    </Link>
+                  </h2>
+                  <ul className="mt-2 divide-y">
+                    {items.map((r) => (
+                      <li key={r.lesson.id}>
+                        <Link
+                          className="block py-2.5 hover:text-primary"
+                          to={`/learn/${c.slug}/${r.lesson.id}`}
+                        >
+                          {r.lesson.title}
+                          <span className="block text-sm text-muted-foreground">
+                            {r.module.title}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="notebook" className="pt-6 text-base">
+          <section className="space-y-3 rounded-xl border bg-card p-5">
             <p className="text-muted-foreground">
               {notes.length === 0
                 ? "Notes you write in lessons are kept in your notebook."
                 : `${notes.length} ${notes.length === 1 ? "note" : "notes"}, grouped by lesson.`}
             </p>
-            <Link to="/notebook" className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Open notebook
+            <Link to="/notebook" className={buttonVariants({ variant: "outline" })}>
+              <NotebookPen /> Open notebook
             </Link>
           </section>
-        </aside>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
