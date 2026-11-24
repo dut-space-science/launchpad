@@ -70,7 +70,7 @@ export function Dashboard() {
   const quizzesPassed = Object.values(s.quizzes).filter((q) => q.passed).length;
   const certs = courses.filter((c) => courseProgress(c, s).complete);
   const marks = Object.keys(s.bookmarks);
-  const notes = Object.keys(s.notes);
+  const notes = Object.keys(s.notes).filter((k) => s.notes[k]?.trim());
   const resolve = (k: string) => {
     const [slug, id] = k.split("/");
     const c = getCourse(slug);
@@ -96,6 +96,7 @@ export function Dashboard() {
   const totalDue = myDue.reduce((a, u) => a + u.n, 0);
   const myMarks = bookmarked.filter((r) => r.c === shown);
   const myNotes = notes.filter((k) => shown && k.startsWith(`${shown.slug}/`));
+  const myNoteLessons = myNotes.flatMap((k) => resolve(k) ?? []);
   const tab = ["courses", "flashcards", "bookmarks", "notebook"].includes(wanted ?? "")
     ? (wanted as string)
     : "courses";
@@ -206,11 +207,11 @@ export function Dashboard() {
                 </TabsList>
               </div>
 
-              <TabsContent value="courses" className="pt-6 text-base">
+              <TabsContent value="courses" className="text-base">
                 <CoursePanel c={shown} s={s} />
               </TabsContent>
 
-              <TabsContent value="flashcards" className="pt-6 text-base">
+              <TabsContent value="flashcards" className="text-base">
                 {myDue.length === 0 ? (
                   <Empty>Nothing due in this course. Each unit has its own deck.</Empty>
                 ) : (
@@ -237,7 +238,7 @@ export function Dashboard() {
                 )}
               </TabsContent>
 
-              <TabsContent value="bookmarks" className="pt-6 text-base">
+              <TabsContent value="bookmarks" className="text-base">
                 {myMarks.length === 0 ? (
                   <Empty>Bookmark a lesson in this course to find it here.</Empty>
                 ) : (
@@ -262,17 +263,37 @@ export function Dashboard() {
                 )}
               </TabsContent>
 
-              <TabsContent value="notebook" className="pt-6 text-base">
-                <section className="space-y-3 rounded-xl border bg-card p-5">
-                  <p className="text-muted-foreground">
-                    {myNotes.length === 0
-                      ? "Notes you write in this course's lessons are kept in your notebook."
-                      : `${myNotes.length} ${myNotes.length === 1 ? "note" : "notes"} in this course, grouped by lesson.`}
-                  </p>
-                  <Link to="/notebook" className={buttonVariants({ variant: "outline" })}>
-                    <NotebookPen /> Open notebook
-                  </Link>
-                </section>
+              <TabsContent value="notebook" className="text-base">
+                {myNoteLessons.length === 0 ? (
+                  <Empty>Write a note in this course's lessons to find it here.</Empty>
+                ) : (
+                  <section className="rounded-xl border bg-card p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <h2 className="text-lg font-semibold">Lessons with notes</h2>
+                      <Link
+                        to="/notebook"
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                      >
+                        <NotebookPen /> Open notebook
+                      </Link>
+                    </div>
+                    <ul className="mt-2 divide-y">
+                      {myNoteLessons.map((r) => (
+                        <li key={r.lesson.id}>
+                          <Link
+                            className="block py-2.5 hover:text-primary"
+                            to={`/notebook?note=${r.c.slug}/${r.lesson.id}`}
+                          >
+                            {r.lesson.title}
+                            <span className="block text-sm text-muted-foreground">
+                              {r.module.title}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
               </TabsContent>
             </Tabs>
           </div>
