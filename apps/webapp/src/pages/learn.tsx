@@ -36,7 +36,7 @@ import { LessonStateIcon, MasteryIcon } from "@/components/mastery";
 import { unitStatus } from "@/lib/mastery";
 import { Blocks } from "@/components/rich";
 import { Quiz } from "@/components/quiz";
-import { YouTubeEmbed } from "@/components/youtube";
+import { LessonVideos } from "@/components/youtube";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -491,9 +491,13 @@ function LessonView({
         </div>
       </header>
 
-      {lesson.videos?.map((v) => (
-        <YouTubeEmbed key={v.id} video={v} />
-      ))}
+      {lesson.videos?.length ? (
+        <LessonVideos
+          key={key}
+          videos={lesson.videos}
+          listClassName={cn(wide && "mx-auto w-full max-w-3xl")}
+        />
+      ) : null}
 
       <Tabs defaultValue="lesson" className={cn(wide && "mx-auto w-full max-w-3xl")}>
         <TabsList variant="line" className="w-fit justify-start">
