@@ -169,7 +169,6 @@ export function Dashboard() {
             <CourseRegister
               list={registerOrder}
               active={shown.slug}
-              s={s}
               onPick={(slug) => {
                 const next = new URLSearchParams(params);
                 next.set("course", slug);
@@ -347,18 +346,16 @@ function CoursePanel({ c, s }: { c: Course; s: State }) {
 }
 
 /**
- * Your courses as a list beside the one card on show. Every row carries its own progress, so the whole set can be read
- * at a glance; the list scrolls inside itself (so it never lengthens the page) and gains a search box when it is long.
+ * Your courses as a list beside the tabs: picking one sets the course every tab shows. The list scrolls inside itself (so
+ * it never lengthens the page) and gains a search box when it is long.
  */
 function CourseRegister({
   list,
   active,
-  s,
   onPick,
 }: {
   list: Course[];
   active: string;
-  s: State;
   onPick: (slug: string) => void;
 }) {
   const [q, setQ] = useState("");
@@ -382,7 +379,6 @@ function CourseRegister({
       )}
       <ol className="max-h-72 overflow-y-auto [scrollbar-width:thin] lg:max-h-[calc(100svh-15rem)]">
         {rows.map((c) => {
-          const p = courseProgress(c, s);
           const current = c.slug === active;
           return (
             <li key={c.slug}>
@@ -391,27 +387,13 @@ function CourseRegister({
                 aria-current={current || undefined}
                 onClick={() => onPick(c.slug)}
                 className={cn(
-                  "w-full space-y-1.5 border-l-[3px] px-4 py-3 text-left transition-colors",
-                  current ? "border-l-primary bg-muted" : "border-l-transparent hover:bg-muted/60",
+                  "w-full border-l-[3px] px-4 py-3 text-left leading-snug transition-colors",
+                  current
+                    ? "border-l-primary bg-muted font-semibold"
+                    : "border-l-transparent font-medium hover:bg-muted/60",
                 )}
               >
-                <span
-                  className={cn(
-                    "line-clamp-2 leading-snug",
-                    current ? "font-semibold" : "font-medium",
-                  )}
-                >
-                  {c.title}
-                </span>
-                <span className="block h-1.5 overflow-hidden rounded-full bg-m-none" aria-hidden>
-                  <span
-                    className="block h-full rounded-full bg-primary"
-                    style={{ width: `${p.pct}%` }}
-                  />
-                </span>
-                <span className="block text-sm text-muted-foreground tabular-nums">
-                  {p.complete ? "Complete" : `${p.done} of ${p.lessonsTotal} lessons`}
-                </span>
+                {c.title}
               </button>
             </li>
           );
