@@ -98,27 +98,33 @@ function SafetyLine({ lastBackup, onBackup }: { lastBackup: number | null; onBac
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border px-4 py-3",
+        "flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:gap-4",
         info.writeError ? "border-destructive/50 bg-destructive/5" : "bg-muted/40",
       )}
       role="status"
     >
-      <Icon
-        className={cn("size-5 shrink-0", safe ? "text-primary" : "text-muted-foreground")}
-        aria-hidden
-      />
-      <p className="min-w-0 flex-1">
-        {info.writeError ? (
-          <>The last save failed: {info.writeError}. Save a backup now.</>
-        ) : lastBackup === null ? (
-          <>
-            Your progress is saved only in this browser. <strong>No backup yet.</strong>
-          </>
-        ) : (
-          <>Your progress is saved in this browser. Last backup {ago(lastBackup)}.</>
-        )}
-      </p>
-      <Button variant={safe ? "outline" : "default"} onClick={onBackup}>
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <Icon
+          className={cn("mt-0.5 size-5 shrink-0", safe ? "text-primary" : "text-muted-foreground")}
+          aria-hidden
+        />
+        <p className="min-w-0">
+          {info.writeError ? (
+            <>The last save failed: {info.writeError}. Save a backup now.</>
+          ) : lastBackup === null ? (
+            <>
+              Your progress is saved only in this browser. <strong>No backup yet.</strong>
+            </>
+          ) : (
+            <>Your progress is saved in this browser. Last backup {ago(lastBackup)}.</>
+          )}
+        </p>
+      </div>
+      <Button
+        variant={safe ? "outline" : "default"}
+        onClick={onBackup}
+        className="w-full sm:w-auto"
+      >
         <Download /> Save backup
       </Button>
     </div>
