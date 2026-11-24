@@ -22,3 +22,17 @@ export function bytes(n: number) {
 export function dayKey(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+/** The app's locale for dates and times: South African English (day first, 24-hour clock). */
+export const LOCALE = "en-ZA";
+
+/** Format a date for display in the app's locale. Without options: "21 Nov 2026". */
+export function fmtDate(d: Date | number, options?: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat(
+    LOCALE,
+    options ?? { day: "numeric", month: "short", year: "numeric" },
+  ).format(d);
+}
+
+/** Days since Monday for a date: 0 for Monday up to 6 for Sunday. Weeks start on Monday here. */
+export const mondayIndex = (d: Date) => (d.getDay() + 6) % 7;

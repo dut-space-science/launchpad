@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import type { Course } from "@/data/types";
 import { QUIZ_PASS } from "@/data/courses";
-import { dayKey } from "@/lib/format";
+import { dayKey, fmtDate, mondayIndex } from "@/lib/format";
 import { useStore } from "@/store/store";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +53,7 @@ export function ActivityHeatmap({
 
   const today = new Date();
   const start = new Date(today);
-  start.setDate(today.getDate() - today.getDay() - (weeks - 1) * 7);
+  start.setDate(today.getDate() - mondayIndex(today) - (weeks - 1) * 7); // columns are weeks, Monday first
   const cols = Array.from({ length: weeks }, (_, w) =>
     Array.from({ length: 7 }, (_, d) => {
       const day = new Date(start);
@@ -69,7 +69,7 @@ export function ActivityHeatmap({
 
   const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
   const describe = (c: { day: Date; n: number }) =>
-    `${c.day.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}: ${
+    `${fmtDate(c.day, { weekday: "short", day: "numeric", month: "short" })}: ${
       c.n === 0 ? "no study" : plural(c.n, "action")
     }`;
   // A month is labelled above the week it starts in; a partial first month only if it has room before the next label.
@@ -79,7 +79,7 @@ export function ActivityHeatmap({
   const month = (w: number) => {
     const first = cols[w][0]?.day;
     const show = starts[w] || (w === 0 && !starts.slice(1, 4).some(Boolean));
-    return first && show ? first.toLocaleDateString(undefined, { month: "short" }) : "";
+    return first && show ? fmtDate(first, { month: "short" }) : "";
   };
   const showTip = (el: HTMLElement, c: { day: Date; n: number }) =>
     setTip({ x: el.offsetLeft + el.offsetWidth / 2, y: el.offsetTop, text: describe(c) });
@@ -111,7 +111,7 @@ export function ActivityHeatmap({
                 style={{ gridColumn: 1, gridRow: d + 2 }}
                 aria-hidden
               >
-                {["", "Mon", "", "Wed", "", "Fri", ""][d]}
+                {["Mon", "", "Wed", "", "Fri", "", ""][d]}
               </span>
               {cols.map((col, w) => {
                 const c = col[d];

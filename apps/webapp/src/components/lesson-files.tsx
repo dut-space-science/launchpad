@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Download, FolderOpen, Paperclip, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { bytes } from "@/lib/format";
+import { bytes, fmtDate } from "@/lib/format";
 import {
   allowFolder,
   connectFolder,
@@ -119,7 +119,7 @@ export function LessonFiles({ course, lesson }: { course: string; lesson: string
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{f.name}</span>
                 <span className="text-sm text-muted-foreground">
-                  {bytes(f.size)}, {new Date(f.modified).toLocaleDateString()}
+                  {bytes(f.size)}, {fmtDate(f.modified)}
                 </span>
               </span>
               <Button
