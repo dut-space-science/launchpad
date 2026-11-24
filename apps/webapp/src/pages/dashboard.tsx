@@ -1,16 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Award, Bookmark, GraduationCap, Layers, NotebookPen, PlayCircle } from "lucide-react";
 import { CourseMasteryBar, UnitLadder, MasteryBadge } from "@/components/mastery";
 import { buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import type { Course } from "@/data/types";
 import type { State } from "@/store/store";
 import { courses, findLesson, getCourse } from "@/data/courses";
@@ -84,24 +78,24 @@ export function Dashboard() {
     return c && f ? { c, ...f } : undefined;
   };
   const days = streak(s.activity);
-  const totalDue = dueUnits.reduce((a, u) => a + u.n, 0);
-  const dueByCourse = [...new Set(dueUnits.map((u) => u.c))].map((c) => ({
-    c,
-    units: dueUnits.filter((u) => u.c === c),
-  }));
   const bookmarked = marks.flatMap((k) => resolve(k) ?? []);
-  const bookmarksByCourse = [...new Set(bookmarked.map((r) => r.c))].map((c) => ({
-    c,
-    items: bookmarked.filter((r) => r.c === c),
-  }));
   const [params, setParams] = useSearchParams();
   const bar = useRef<HTMLDivElement>(null);
+  // The course list leads with the one studied last.
+  const registerOrder = [...enrolled].sort(
+    (x, y) => Number(y.slug === s.last?.course) - Number(x.slug === s.last?.course),
+  );
   const wanted = params.get("tab");
   // The course card on show: the one in the address, else the one studied last, else the first.
   const shown =
     enrolled.find((c) => c.slug === params.get("course")) ??
     enrolled.find((c) => c.slug === s.last?.course) ??
     enrolled[0];
+  // Everything the tabs show is about the course selected in the list.
+  const myDue = dueUnits.filter((u) => u.c === shown);
+  const totalDue = myDue.reduce((a, u) => a + u.n, 0);
+  const myMarks = bookmarked.filter((r) => r.c === shown);
+  const myNotes = notes.filter((k) => shown && k.startsWith(`${shown.slug}/`));
   const tab = ["courses", "flashcards", "bookmarks", "notebook"].includes(wanted ?? "")
     ? (wanted as string)
     : "courses";
@@ -154,164 +148,137 @@ export function Dashboard() {
         <ActivityHeatmap activity={s.activity} />
       </section>
 
-      <Tabs
-        value={tab}
-        onValueChange={(v) => {
-          const next = new URLSearchParams(params);
-          if (v === "courses") next.delete("tab");
-          else next.set("tab", v as string);
-          setParams(next, { replace: true });
-        }}
-      >
-        <div
-          ref={bar}
-          className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] sm:mx-0 sm:px-0"
-        >
-          <TabsList variant="line" className="w-max justify-start">
-            <TabsTrigger value="courses" className="gap-2 px-3 text-base">
-              <GraduationCap /> Courses <Count n={enrolled.length} />
-            </TabsTrigger>
-            <TabsTrigger value="flashcards" className="gap-2 px-3 text-base">
-              <Layers /> Flashcards <Count n={totalDue} />
-            </TabsTrigger>
-            <TabsTrigger value="bookmarks" className="gap-2 px-3 text-base">
-              <Bookmark /> Bookmarks <Count n={bookmarked.length} />
-            </TabsTrigger>
-            <TabsTrigger value="notebook" className="gap-2 px-3 text-base">
-              <NotebookPen /> Notebook <Count n={notes.length} />
-            </TabsTrigger>
-          </TabsList>
+      {!shown ? (
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed p-8">
+          <h2 className="text-xl font-semibold">Start your first course</h2>
+          <p className="max-w-md text-muted-foreground">
+            Your mastery, quiz scores and study activity will show up here as you learn.
+          </p>
+          <Link to="/" className={buttonVariants()}>
+            <GraduationCap /> Browse courses
+          </Link>
         </div>
-
-        <TabsContent value="courses" className="space-y-6 pt-6 text-base">
-          {enrolled.length === 0 && (
-            <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed p-8">
-              <h2 className="text-xl font-semibold">Start your first course</h2>
-              <p className="max-w-md text-muted-foreground">
-                Your mastery, quiz scores and study activity will show up here as you learn.
-              </p>
-              <Link to="/" className={buttonVariants()}>
-                <GraduationCap /> Browse courses
-              </Link>
-            </div>
+      ) : (
+        <div
+          className={cn(
+            "grid grid-cols-1 gap-6",
+            enrolled.length > 1 && "lg:grid-cols-[17rem_minmax(0,1fr)]",
           )}
+        >
           {enrolled.length > 1 && (
-            <div className="flex flex-wrap items-center gap-3">
-              <label id="course-pick" className="text-muted-foreground">
-                Course
-              </label>
-              <Select
-                value={shown.slug}
-                onValueChange={(v) => {
-                  const next = new URLSearchParams(params);
-                  next.set("course", v as string);
-                  setParams(next, { replace: true });
-                }}
-                items={enrolled.map((c) => ({ value: c.slug, label: c.title }))}
+            <CourseRegister
+              list={registerOrder}
+              active={shown.slug}
+              s={s}
+              onPick={(slug) => {
+                const next = new URLSearchParams(params);
+                next.set("course", slug);
+                setParams(next, { replace: true });
+              }}
+            />
+          )}
+          <div className="min-w-0">
+            <Tabs
+              value={tab}
+              onValueChange={(v) => {
+                const next = new URLSearchParams(params);
+                if (v === "courses") next.delete("tab");
+                else next.set("tab", v as string);
+                setParams(next, { replace: true });
+              }}
+            >
+              <div
+                ref={bar}
+                className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] sm:mx-0 sm:px-0"
               >
-                <SelectTrigger className="h-11 w-full max-w-md" aria-labelledby="course-pick">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {enrolled.map((c) => (
-                    <SelectItem key={c.slug} value={c.slug}>
-                      {c.title}
-                      <span className="ml-3 text-muted-foreground tabular-nums">
-                        {courseProgress(c, s).pct}%
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="text-sm text-muted-foreground">
-                {enrolled.length} courses, showing one at a time
-              </span>
-            </div>
-          )}
-          {shown && <CoursePanel c={shown} s={s} />}
-        </TabsContent>
+                <TabsList variant="line" className="w-max justify-start">
+                  <TabsTrigger value="courses" className="gap-2 px-3 text-base">
+                    <GraduationCap /> Progress
+                  </TabsTrigger>
+                  <TabsTrigger value="flashcards" className="gap-2 px-3 text-base">
+                    <Layers /> Flashcards <Count n={totalDue} />
+                  </TabsTrigger>
+                  <TabsTrigger value="bookmarks" className="gap-2 px-3 text-base">
+                    <Bookmark /> Bookmarks <Count n={myMarks.length} />
+                  </TabsTrigger>
+                  <TabsTrigger value="notebook" className="gap-2 px-3 text-base">
+                    <NotebookPen /> Notebook <Count n={myNotes.length} />
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-        <TabsContent value="flashcards" className="pt-6 text-base">
-          {dueByCourse.length === 0 ? (
-            <Empty>Nothing due. Each unit has its own deck.</Empty>
-          ) : (
-            <div className="space-y-6">
-              {dueByCourse.map(({ c, units }) => (
-                <section key={c.slug} className="rounded-xl border bg-card p-5">
-                  <h2 className="text-lg font-semibold">
-                    <Link to={`/courses/${c.slug}`} className="hover:text-primary">
-                      {c.title}
-                    </Link>
-                  </h2>
-                  <ul className="mt-2 divide-y">
-                    {units.map((u) => (
-                      <li key={u.m.id}>
-                        <Link
-                          className="flex items-center justify-between gap-4 py-2.5 hover:text-primary"
-                          to={`/learn/${u.c.slug}/cards/${u.m.id}`}
-                        >
-                          <span className="min-w-0 truncate">
-                            Unit {u.i + 1}: {u.m.title}
-                          </span>
-                          <span className="shrink-0 font-semibold tabular-nums">
-                            {u.n} {u.n === 1 ? "card" : "cards"}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
+              <TabsContent value="courses" className="pt-6 text-base">
+                <CoursePanel c={shown} s={s} />
+              </TabsContent>
+
+              <TabsContent value="flashcards" className="pt-6 text-base">
+                {myDue.length === 0 ? (
+                  <Empty>Nothing due in this course. Each unit has its own deck.</Empty>
+                ) : (
+                  <section className="rounded-xl border bg-card p-5">
+                    <h2 className="text-lg font-semibold">Flashcards to review</h2>
+                    <ul className="mt-2 divide-y">
+                      {myDue.map((u) => (
+                        <li key={u.m.id}>
+                          <Link
+                            className="flex items-center justify-between gap-4 py-2.5 hover:text-primary"
+                            to={`/learn/${u.c.slug}/cards/${u.m.id}`}
+                          >
+                            <span className="min-w-0 truncate">
+                              Unit {u.i + 1}: {u.m.title}
+                            </span>
+                            <span className="shrink-0 font-semibold tabular-nums">
+                              {u.n} {u.n === 1 ? "card" : "cards"}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </TabsContent>
+
+              <TabsContent value="bookmarks" className="pt-6 text-base">
+                {myMarks.length === 0 ? (
+                  <Empty>Bookmark a lesson in this course to find it here.</Empty>
+                ) : (
+                  <section className="rounded-xl border bg-card p-5">
+                    <h2 className="text-lg font-semibold">Bookmarked lessons</h2>
+                    <ul className="mt-2 divide-y">
+                      {myMarks.map((r) => (
+                        <li key={r.lesson.id}>
+                          <Link
+                            className="block py-2.5 hover:text-primary"
+                            to={`/learn/${r.c.slug}/${r.lesson.id}`}
+                          >
+                            {r.lesson.title}
+                            <span className="block text-sm text-muted-foreground">
+                              {r.module.title}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </TabsContent>
+
+              <TabsContent value="notebook" className="pt-6 text-base">
+                <section className="space-y-3 rounded-xl border bg-card p-5">
+                  <p className="text-muted-foreground">
+                    {myNotes.length === 0
+                      ? "Notes you write in this course's lessons are kept in your notebook."
+                      : `${myNotes.length} ${myNotes.length === 1 ? "note" : "notes"} in this course, grouped by lesson.`}
+                  </p>
+                  <Link to="/notebook" className={buttonVariants({ variant: "outline" })}>
+                    <NotebookPen /> Open notebook
+                  </Link>
                 </section>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="bookmarks" className="pt-6 text-base">
-          {bookmarked.length === 0 ? (
-            <Empty>Bookmark a lesson to find it here.</Empty>
-          ) : (
-            <div className="space-y-6">
-              {bookmarksByCourse.map(({ c, items }) => (
-                <section key={c.slug} className="rounded-xl border bg-card p-5">
-                  <h2 className="text-lg font-semibold">
-                    <Link to={`/courses/${c.slug}`} className="hover:text-primary">
-                      {c.title}
-                    </Link>
-                  </h2>
-                  <ul className="mt-2 divide-y">
-                    {items.map((r) => (
-                      <li key={r.lesson.id}>
-                        <Link
-                          className="block py-2.5 hover:text-primary"
-                          to={`/learn/${c.slug}/${r.lesson.id}`}
-                        >
-                          {r.lesson.title}
-                          <span className="block text-sm text-muted-foreground">
-                            {r.module.title}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="notebook" className="pt-6 text-base">
-          <section className="space-y-3 rounded-xl border bg-card p-5">
-            <p className="text-muted-foreground">
-              {notes.length === 0
-                ? "Notes you write in lessons are kept in your notebook."
-                : `${notes.length} ${notes.length === 1 ? "note" : "notes"}, grouped by lesson.`}
-            </p>
-            <Link to="/notebook" className={buttonVariants({ variant: "outline" })}>
-              <NotebookPen /> Open notebook
-            </Link>
-          </section>
-        </TabsContent>
-      </Tabs>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -376,5 +343,83 @@ function CoursePanel({ c, s }: { c: Course; s: State }) {
         <QuizScores course={c} />
       </div>
     </section>
+  );
+}
+
+/**
+ * Your courses as a list beside the one card on show. Every row carries its own progress, so the whole set can be read
+ * at a glance; the list scrolls inside itself (so it never lengthens the page) and gains a search box when it is long.
+ */
+function CourseRegister({
+  list,
+  active,
+  s,
+  onPick,
+}: {
+  list: Course[];
+  active: string;
+  s: State;
+  onPick: (slug: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const query = q.trim().toLowerCase();
+  const rows = query ? list.filter((c) => c.title.toLowerCase().includes(query)) : list;
+  return (
+    <nav
+      aria-label="Your courses"
+      className="self-start overflow-hidden rounded-xl border bg-card lg:sticky lg:top-24"
+    >
+      <p className="border-b px-4 py-2.5 text-sm text-muted-foreground">{list.length} courses</p>
+      {list.length > 6 && (
+        <div className="border-b p-2">
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Find a course"
+            aria-label="Find a course"
+          />
+        </div>
+      )}
+      <ol className="max-h-72 overflow-y-auto [scrollbar-width:thin] lg:max-h-[calc(100svh-15rem)]">
+        {rows.map((c) => {
+          const p = courseProgress(c, s);
+          const current = c.slug === active;
+          return (
+            <li key={c.slug}>
+              <button
+                type="button"
+                aria-current={current || undefined}
+                onClick={() => onPick(c.slug)}
+                className={cn(
+                  "w-full space-y-1.5 border-l-[3px] px-4 py-3 text-left transition-colors",
+                  current ? "border-l-primary bg-muted" : "border-l-transparent hover:bg-muted/60",
+                )}
+              >
+                <span
+                  className={cn(
+                    "line-clamp-2 leading-snug",
+                    current ? "font-semibold" : "font-medium",
+                  )}
+                >
+                  {c.title}
+                </span>
+                <span className="block h-1.5 overflow-hidden rounded-full bg-m-none" aria-hidden>
+                  <span
+                    className="block h-full rounded-full bg-primary"
+                    style={{ width: `${p.pct}%` }}
+                  />
+                </span>
+                <span className="block text-sm text-muted-foreground tabular-nums">
+                  {p.complete ? "Complete" : `${p.done} of ${p.lessonsTotal} lessons`}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+        {rows.length === 0 && (
+          <li className="px-4 py-3 text-sm text-muted-foreground">No course matches.</li>
+        )}
+      </ol>
+    </nav>
   );
 }
