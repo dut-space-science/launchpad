@@ -115,7 +115,7 @@ export function VolumeSlider({
         <Icon className="size-5" />
       </Button>
       <Level value={value} onChange={onChange} label={label} />
-      <span className="w-12 text-right text-lg font-semibold tabular-nums">{value}%</span>
+      <span className="w-14 shrink-0 text-right text-lg font-semibold tabular-nums">{value}%</span>
     </div>
   );
 }
